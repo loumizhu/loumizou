@@ -326,8 +326,9 @@ const HOVER_CONFIG = {
             item.style.overflow = 'hidden';
             
             // Store original transform if it exists
-            const originalTransform = window.getComputedStyle(img).transform;
-            const hasOriginalTransform = originalTransform && originalTransform !== 'none';
+            const computedStyle = window.getComputedStyle(img);
+            const originalTransform = computedStyle.transform;
+            const hasOriginalTransform = originalTransform && originalTransform !== 'none' && originalTransform !== 'matrix(1, 0, 0, 1, 0, 0)';
             
             // Add transition to image for smooth zoom
             img.style.transition = `transform ${HOVER_CONFIG.zoomDuration}ms ${HOVER_CONFIG.zoomEasing}`;
@@ -336,6 +337,8 @@ const HOVER_CONFIG = {
             // Store original transform for later use
             if (hasOriginalTransform) {
                 img.dataset.originalTransform = originalTransform;
+            } else {
+                img.dataset.originalTransform = 'none';
             }
         }
         
@@ -356,8 +359,9 @@ const HOVER_CONFIG = {
                 if (img) {
                     const originalTransform = img.dataset.originalTransform || 'none';
                     if (originalTransform !== 'none') {
-                        // Combine original transform with scale
-                        img.style.transform = `${originalTransform} scale(${HOVER_CONFIG.zoomScale})`;
+                        // Combine original transform with scale (scale first, then original transform)
+                        // This ensures the scale is applied relative to the image center
+                        img.style.transform = `scale(${HOVER_CONFIG.zoomScale}) ${originalTransform}`;
                     } else {
                         img.style.transform = `scale(${HOVER_CONFIG.zoomScale})`;
                     }
