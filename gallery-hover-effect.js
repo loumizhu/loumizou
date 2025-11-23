@@ -15,7 +15,7 @@ const HOVER_CONFIG = {
     swipeLineOpacity: 0.5,     // Opacity of white swipe lines (0-1)
     
     // Blue gradient box
-    gradientBoxHeight: '120px', // Height of blue gradient box
+    gradientBoxHeight: '200px', // Height of blue gradient box
     gradientBoxFadeDuration: 800, // Duration of gradient fade out (milliseconds)
     gradientBoxColor: 'rgba(53, 158, 255, 0.4)', // Blue gradient color (rgba)
     gradientBoxFadeDelay: 100, // Delay before gradient starts fading (milliseconds)
@@ -33,9 +33,9 @@ const HOVER_CONFIG = {
     
     // Right-to-left swipe line (vertical line)
     swipeLineRtlDuration: 500, // Duration of right-to-left line animation (milliseconds)
-    swipeLineRtlDelay: 100,   // Delay before right-to-left line starts (milliseconds)
+    swipeLineRtlDelay: 0,   // Delay before right-to-left line starts (same as top-to-bottom lines)
     swipeLineRtlWidth: '2px', // Width of vertical right-to-left swipe line
-    swipeLineRtlColor: 'rgba(255, 255, 255, 0.6)', // Color of right-to-left swipe line
+    swipeLineRtlColor: 'rgba(255, 255, 255, 0.3)', // Color of right-to-left swipe line
     
     // Color extraction
     colorSampleSize: 5,        // Size of area to sample color from (pixels)
@@ -225,6 +225,7 @@ const HOVER_CONFIG = {
             right: 0;
             bottom: 0;
             background: ${toRgba(imageColor, HOVER_CONFIG.nameBackgroundOpacity)};
+            border-radius: 6px;
             z-index: -1;
             animation: pulsate ${HOVER_CONFIG.namePulsateDuration}ms ease-in-out infinite;
         `;
@@ -324,9 +325,18 @@ const HOVER_CONFIG = {
             }
             item.style.overflow = 'hidden';
             
+            // Store original transform if it exists
+            const originalTransform = window.getComputedStyle(img).transform;
+            const hasOriginalTransform = originalTransform && originalTransform !== 'none';
+            
             // Add transition to image for smooth zoom
             img.style.transition = `transform ${HOVER_CONFIG.zoomDuration}ms ${HOVER_CONFIG.zoomEasing}`;
             img.style.transformOrigin = 'center center';
+            
+            // Store original transform for later use
+            if (hasOriginalTransform) {
+                img.dataset.originalTransform = originalTransform;
+            }
         }
         
         // Handle hover
@@ -344,7 +354,13 @@ const HOVER_CONFIG = {
                 
                 // Zoom in the image
                 if (img) {
-                    img.style.transform = `scale(${HOVER_CONFIG.zoomScale})`;
+                    const originalTransform = img.dataset.originalTransform || 'none';
+                    if (originalTransform !== 'none') {
+                        // Combine original transform with scale
+                        img.style.transform = `${originalTransform} scale(${HOVER_CONFIG.zoomScale})`;
+                    } else {
+                        img.style.transform = `scale(${HOVER_CONFIG.zoomScale})`;
+                    }
                 }
                 
                 // Animate gradient box first (it follows the lines)
@@ -364,23 +380,25 @@ const HOVER_CONFIG = {
                 // Animate name container
                 nameContainer.style.transform = 'translateX(0)';
                 
-                // Animate right-to-left vertical line after name appears
-                setTimeout(() => {
-                    // Wait for name to be fully visible, then calculate position
-                    requestAnimationFrame(() => {
-                        // Get the name container position
-                        const nameRect = nameContainer.getBoundingClientRect();
-                        const itemRect = item.getBoundingClientRect();
-                        const nameLeft = nameRect.left - itemRect.left;
-                        const itemWidth = itemRect.width;
-                        
-                        // Calculate distance from right edge to name start
-                        const distanceToName = itemWidth - nameLeft;
-                        
-                        // Animate vertical line from right to left, stopping at name start
-                        rtlLineContainer.style.transform = `translateX(-${distanceToName}px)`;
-                    });
-                }, HOVER_CONFIG.nameRevealDelay + HOVER_CONFIG.nameRevealDuration);
+                // Animate right-to-left vertical line at the same time as top-to-bottom lines
+                requestAnimationFrame(() => {
+                    // Wait a bit for name to be visible, then calculate position
+                    setTimeout(() => {
+                        requestAnimationFrame(() => {
+                            // Get the name container position
+                            const nameRect = nameContainer.getBoundingClientRect();
+                            const itemRect = item.getBoundingClientRect();
+                            const nameLeft = nameRect.left - itemRect.left;
+                            const itemWidth = itemRect.width;
+                            
+                            // Calculate distance from right edge to name start
+                            const distanceToName = itemWidth - nameLeft;
+                            
+                            // Animate vertical line from right to left, stopping at name start
+                            rtlLineContainer.style.transform = `translateX(-${distanceToName}px)`;
+                        });
+                    }, HOVER_CONFIG.nameRevealDelay + 50); // Small delay to ensure name is positioned
+                });
             });
         });
         
@@ -394,7 +412,8 @@ const HOVER_CONFIG = {
             
             // Reset zoom on image
             if (img) {
-                img.style.transform = 'scale(1)';
+                const originalTransform = img.dataset.originalTransform || 'none';
+                img.style.transform = originalTransform;
             }
             
             // Reset animations
