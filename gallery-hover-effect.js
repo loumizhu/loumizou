@@ -333,6 +333,7 @@ const HOVER_CONFIG = {
             // Add transition to image for smooth zoom
             img.style.transition = `transform ${HOVER_CONFIG.zoomDuration}ms ${HOVER_CONFIG.zoomEasing}`;
             img.style.transformOrigin = 'center center';
+            img.style.willChange = 'transform'; // Optimize for transform animations
             
             // Store original transform for later use
             if (hasOriginalTransform) {
@@ -340,6 +341,9 @@ const HOVER_CONFIG = {
             } else {
                 img.dataset.originalTransform = 'none';
             }
+            
+            // Ensure the image can be transformed (override any conflicting styles)
+            img.style.transform = originalTransform || 'none';
         }
         
         // Handle hover
@@ -358,12 +362,14 @@ const HOVER_CONFIG = {
                 // Zoom in the image
                 if (img) {
                     const originalTransform = img.dataset.originalTransform || 'none';
+                    // Always apply zoom, combining with existing transform if present
+                    // Use !important to ensure it overrides any conflicting CSS
                     if (originalTransform !== 'none') {
-                        // Combine original transform with scale (scale first, then original transform)
+                        // Combine transforms: apply scale, then original transform
                         // This ensures the scale is applied relative to the image center
-                        img.style.transform = `scale(${HOVER_CONFIG.zoomScale}) ${originalTransform}`;
+                        img.style.setProperty('transform', `scale(${HOVER_CONFIG.zoomScale}) ${originalTransform}`, 'important');
                     } else {
-                        img.style.transform = `scale(${HOVER_CONFIG.zoomScale})`;
+                        img.style.setProperty('transform', `scale(${HOVER_CONFIG.zoomScale})`, 'important');
                     }
                 }
                 
@@ -417,7 +423,11 @@ const HOVER_CONFIG = {
             // Reset zoom on image
             if (img) {
                 const originalTransform = img.dataset.originalTransform || 'none';
-                img.style.transform = originalTransform;
+                if (originalTransform !== 'none') {
+                    img.style.setProperty('transform', originalTransform, 'important');
+                } else {
+                    img.style.removeProperty('transform');
+                }
             }
             
             // Reset animations
