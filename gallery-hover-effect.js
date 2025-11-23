@@ -34,7 +34,12 @@ const HOVER_CONFIG = {
     colorSamplePosition: {    // Position to sample color (top-left area)
         x: 0.1,                // 10% from left
         y: 0.1                 // 10% from top
-    }
+    },
+    
+    // Image zoom effect
+    zoomScale: 1.08,           // Zoom scale factor (1.08 = 8% zoom)
+    zoomDuration: 400,         // Duration of zoom animation (milliseconds)
+    zoomEasing: 'cubic-bezier(0.4, 0, 1, 1)' // Ease-in curve
 };
 
 (function() {
@@ -247,16 +252,37 @@ const HOVER_CONFIG = {
         const overlay = createHoverOverlay(item, imageName, imageColor);
         item.appendChild(overlay);
         
+        // Get the image element and setup zoom effect
+        const img = item.querySelector('img');
+        if (img) {
+            // Make sure the image container can handle overflow
+            const imgParent = img.parentElement;
+            if (imgParent && imgParent !== item) {
+                imgParent.style.overflow = 'hidden';
+            }
+            item.style.overflow = 'hidden';
+            
+            // Add transition to image for smooth zoom
+            img.style.transition = `transform ${HOVER_CONFIG.zoomDuration}ms ${HOVER_CONFIG.zoomEasing}`;
+            img.style.transformOrigin = 'center center';
+        }
+        
         // Handle hover
         item.addEventListener('mouseenter', function() {
             const swipeLine1 = overlay.querySelector('.gallery-swipe-line-1');
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
             const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
+            const img = item.querySelector('img');
             
             // Animate swipe lines and gradient box from top to bottom
             requestAnimationFrame(() => {
                 const itemHeight = item.offsetHeight;
+                
+                // Zoom in the image
+                if (img) {
+                    img.style.transform = `scale(${HOVER_CONFIG.zoomScale})`;
+                }
                 
                 // Animate gradient box first (it follows the lines)
                 gradientBox.style.opacity = '1';
@@ -281,6 +307,12 @@ const HOVER_CONFIG = {
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
             const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
+            const img = item.querySelector('img');
+            
+            // Reset zoom on image
+            if (img) {
+                img.style.transform = 'scale(1)';
+            }
             
             // Reset animations
             swipeLine1.style.transform = 'translateY(-100%)';
