@@ -140,6 +140,9 @@ const HOVER_CONFIG = {
             z-index: 1;
         `;
         
+        // Ensure overlay and its contents stay below menu (menu z-index: 999-1030)
+        // The overlay should not create a new stacking context that goes above menu
+        
         // Create first swipe line (white, half transparent)
         const swipeLine1 = document.createElement('div');
         swipeLine1.className = 'gallery-swipe-line gallery-swipe-line-1';
@@ -324,6 +327,11 @@ const HOVER_CONFIG = {
                 imgParent.style.overflow = 'hidden';
             }
             item.style.overflow = 'hidden';
+            
+            // Ensure gallery items stay below the menu bar (menu z-index is typically 999-1030)
+            // Set a lower z-index so zoomed images don't appear above the menu
+            item.style.position = 'relative';
+            item.style.zIndex = '1';
             
             // Store original transform if it exists
             const computedStyle = window.getComputedStyle(img);
