@@ -12,7 +12,13 @@ const HOVER_CONFIG = {
     swipeDelay: 150,           // Delay before second line starts (milliseconds)
     swipeEasing: 'cubic-bezier(0.4, 0, 0.2, 1)', // Ease in-out curve
     swipeHeight: '4px',        // Height of swipe lines
-    swipeGradientOpacity: 0.6, // Opacity of gradient overlay (0-1)
+    swipeLineOpacity: 0.5,     // Opacity of white swipe lines (0-1)
+    
+    // Blue gradient box
+    gradientBoxHeight: '60px', // Height of blue gradient box
+    gradientBoxFadeDuration: 800, // Duration of gradient fade out (milliseconds)
+    gradientBoxColor: 'rgba(59, 130, 246, 0.4)', // Blue gradient color (rgba)
+    gradientBoxFadeDelay: 100, // Delay before gradient starts fading (milliseconds)
     
     // Image name reveal
     nameRevealDuration: 400,   // Duration of text slide animation (milliseconds)
@@ -21,7 +27,7 @@ const HOVER_CONFIG = {
     namePadding: '8px 16px',   // Padding for name container
     nameFontSize: '14px',      // Font size for name
     nameColor: '#ffffff',      // Text color
-    nameBackgroundColor: 'rgba(0, 0, 0, 0.85)', // Fallback background color
+    nameBackgroundColor: 'rgba(79, 136, 243, 0.51)', // Fallback background color
     
     // Color extraction
     colorSampleSize: 5,        // Size of area to sample color from (pixels)
@@ -121,7 +127,7 @@ const HOVER_CONFIG = {
             z-index: 1;
         `;
         
-        // Create first swipe line
+        // Create first swipe line (white, half transparent)
         const swipeLine1 = document.createElement('div');
         swipeLine1.className = 'gallery-swipe-line gallery-swipe-line-1';
         swipeLine1.style.cssText = `
@@ -130,16 +136,13 @@ const HOVER_CONFIG = {
             left: 0;
             right: 0;
             height: ${HOVER_CONFIG.swipeHeight};
-            background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0) 0%,
-                ${toRgba(imageColor, HOVER_CONFIG.swipeGradientOpacity)} 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
+            background: rgba(255, 255, 255, ${HOVER_CONFIG.swipeLineOpacity});
             transform: translateY(-100%);
             transition: transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing};
+            z-index: 3;
         `;
         
-        // Create second swipe line
+        // Create second swipe line (white, half transparent)
         const swipeLine2 = document.createElement('div');
         swipeLine2.className = 'gallery-swipe-line gallery-swipe-line-2';
         swipeLine2.style.cssText = `
@@ -148,14 +151,31 @@ const HOVER_CONFIG = {
             left: 0;
             right: 0;
             height: ${HOVER_CONFIG.swipeHeight};
-            background: linear-gradient(to bottom, 
-                rgba(255, 255, 255, 0) 0%,
-                ${toRgba(imageColor, HOVER_CONFIG.swipeGradientOpacity * 0.7)} 50%,
-                rgba(255, 255, 255, 0) 100%
-            );
+            background: rgba(255, 255, 255, ${HOVER_CONFIG.swipeLineOpacity});
             transform: translateY(-100%);
             transition: transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing};
             transition-delay: ${HOVER_CONFIG.swipeDelay}ms;
+            z-index: 3;
+        `;
+        
+        // Create blue gradient box that follows the lines
+        const gradientBox = document.createElement('div');
+        gradientBox.className = 'gallery-gradient-box';
+        gradientBox.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: ${HOVER_CONFIG.gradientBoxHeight};
+            background: linear-gradient(to bottom, 
+                ${HOVER_CONFIG.gradientBoxColor} 0%,
+                ${HOVER_CONFIG.gradientBoxColor.replace(/[\d.]+\)$/, '0)')} 100%
+            );
+            transform: translateY(-100%);
+            transition: transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing};
+            opacity: 0;
+            z-index: 2;
+            pointer-events: none;
         `;
         
         // Create name container
@@ -180,6 +200,7 @@ const HOVER_CONFIG = {
             text-overflow: ellipsis;
         `;
         
+        overlay.appendChild(gradientBox);
         overlay.appendChild(swipeLine1);
         overlay.appendChild(swipeLine2);
         overlay.appendChild(nameContainer);
@@ -230,13 +251,27 @@ const HOVER_CONFIG = {
         item.addEventListener('mouseenter', function() {
             const swipeLine1 = overlay.querySelector('.gallery-swipe-line-1');
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
+            const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             
-            // Animate swipe lines from top to bottom
+            // Animate swipe lines and gradient box from top to bottom
             requestAnimationFrame(() => {
                 const itemHeight = item.offsetHeight;
+                
+                // Animate gradient box first (it follows the lines)
+                gradientBox.style.opacity = '1';
+                gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
+                gradientBox.style.transform = `translateY(${itemHeight}px)`;
+                
+                // Start fading gradient box as it moves
+                setTimeout(() => {
+                    gradientBox.style.opacity = '0';
+                }, HOVER_CONFIG.gradientBoxFadeDelay);
+                
+                // Animate swipe lines
                 swipeLine1.style.transform = `translateY(${itemHeight}px)`;
                 swipeLine2.style.transform = `translateY(${itemHeight}px)`;
+                
                 nameContainer.style.transform = 'translateX(0)';
             });
         });
@@ -244,17 +279,22 @@ const HOVER_CONFIG = {
         item.addEventListener('mouseleave', function() {
             const swipeLine1 = overlay.querySelector('.gallery-swipe-line-1');
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
+            const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             
             // Reset animations
             swipeLine1.style.transform = 'translateY(-100%)';
             swipeLine2.style.transform = 'translateY(-100%)';
             swipeLine2.style.transitionDelay = '0ms';
+            gradientBox.style.transform = 'translateY(-100%)';
+            gradientBox.style.opacity = '0';
+            gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity 0ms`;
             nameContainer.style.transform = 'translateX(-100%)';
             
             // Reset delay for next hover
             setTimeout(() => {
                 swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeDelay}ms`;
+                gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
             }, 50);
         });
     }
