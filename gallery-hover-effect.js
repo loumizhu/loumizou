@@ -17,8 +17,8 @@ const HOVER_CONFIG = {
     // Blue gradient box
     gradientBoxHeight: '200px', // Height of blue gradient box
     gradientBoxFadeDuration: 800, // Duration of gradient fade out (milliseconds)
-    gradientBoxColor: 'rgba(53, 158, 255, 0.4)', // Blue gradient color (rgba)
-    gradientBoxFadeDelay: 100, // Delay before gradient starts fading (milliseconds)
+    gradientBoxColor: 'rgba(59, 130, 246, 0.6)', // Blue gradient color (rgba) - increased opacity for visibility
+    gradientBoxFadeDelay: 300, // Delay before gradient starts fading (milliseconds) - increased delay
     
     // Image name reveal
     nameRevealDuration: 400,   // Duration of text slide animation (milliseconds)
@@ -188,7 +188,7 @@ const HOVER_CONFIG = {
                 ${HOVER_CONFIG.gradientBoxColor.replace(/[\d.]+\)$/, '0)')} 100%
             );
             transform: translateY(-100%);
-            transition: transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing};
+            transition: transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms;
             opacity: 0;
             z-index: 2;
             pointer-events: none;
@@ -386,7 +386,7 @@ const HOVER_CONFIG = {
                 gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
                 gradientBox.style.transform = `translateY(${itemHeight}px)`;
                 
-                // Start fading gradient box as it moves
+                // Start fading gradient box after it has moved a bit (increased delay for visibility)
                 setTimeout(() => {
                     gradientBox.style.opacity = '0';
                 }, HOVER_CONFIG.gradientBoxFadeDelay);
