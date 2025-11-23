@@ -31,10 +31,10 @@ const HOVER_CONFIG = {
     namePulsateDuration: 2000, // Duration of pulsate animation cycle (milliseconds)
     namePulsateIntensity: 0.15, // Pulsate intensity (0-1, how much opacity changes)
     
-    // Right-to-left swipe line
+    // Right-to-left swipe line (vertical line)
     swipeLineRtlDuration: 500, // Duration of right-to-left line animation (milliseconds)
     swipeLineRtlDelay: 100,   // Delay before right-to-left line starts (milliseconds)
-    swipeLineRtlHeight: '2px', // Height of right-to-left swipe line
+    swipeLineRtlWidth: '2px', // Width of vertical right-to-left swipe line
     swipeLineRtlColor: 'rgba(255, 255, 255, 0.6)', // Color of right-to-left swipe line
     
     // Color extraction
@@ -249,19 +249,19 @@ const HOVER_CONFIG = {
         // Add background element to name container
         nameContainer.appendChild(nameBackground);
         
-        // Create right-to-left swipe line container
+        // Create right-to-left swipe line container (vertical line)
         const rtlLineContainer = document.createElement('div');
         rtlLineContainer.className = 'gallery-rtl-line-container';
         rtlLineContainer.style.cssText = `
             position: absolute;
+            top: 0;
             bottom: 0;
             right: 0;
-            height: ${HOVER_CONFIG.swipeLineRtlHeight};
-            width: 0;
+            width: ${HOVER_CONFIG.swipeLineRtlWidth};
+            height: 100%;
             background: ${HOVER_CONFIG.swipeLineRtlColor};
-            transform-origin: right center;
-            transform: translateX(0);
-            transition: width ${HOVER_CONFIG.swipeLineRtlDuration}ms ${HOVER_CONFIG.swipeEasing};
+            transform: translateX(100%);
+            transition: transform ${HOVER_CONFIG.swipeLineRtlDuration}ms ${HOVER_CONFIG.swipeEasing};
             transition-delay: ${HOVER_CONFIG.swipeLineRtlDelay}ms;
             z-index: 3;
         `;
@@ -364,11 +364,11 @@ const HOVER_CONFIG = {
                 // Animate name container
                 nameContainer.style.transform = 'translateX(0)';
                 
-                // Animate right-to-left line after name appears
+                // Animate right-to-left vertical line after name appears
                 setTimeout(() => {
                     // Wait for name to be fully visible, then calculate position
                     requestAnimationFrame(() => {
-                        // Get the name container position and width
+                        // Get the name container position
                         const nameRect = nameContainer.getBoundingClientRect();
                         const itemRect = item.getBoundingClientRect();
                         const nameLeft = nameRect.left - itemRect.left;
@@ -377,8 +377,8 @@ const HOVER_CONFIG = {
                         // Calculate distance from right edge to name start
                         const distanceToName = itemWidth - nameLeft;
                         
-                        // Animate line from right to left, stopping at name start
-                        rtlLineContainer.style.width = `${distanceToName}px`;
+                        // Animate vertical line from right to left, stopping at name start
+                        rtlLineContainer.style.transform = `translateX(-${distanceToName}px)`;
                     });
                 }, HOVER_CONFIG.nameRevealDelay + HOVER_CONFIG.nameRevealDuration);
             });
@@ -405,7 +405,7 @@ const HOVER_CONFIG = {
             gradientBox.style.opacity = '0';
             gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity 0ms`;
             nameContainer.style.transform = 'translateX(-100%)';
-            rtlLineContainer.style.width = '0';
+            rtlLineContainer.style.transform = 'translateX(100%)';
             rtlLineContainer.style.transitionDelay = '0ms';
             
             // Reset delay for next hover
