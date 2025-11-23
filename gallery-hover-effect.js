@@ -8,16 +8,16 @@
 // ============================================
 const HOVER_CONFIG = {
     // Swipe line animation
-    swipeDuration: 600,        // Duration of swipe animation in milliseconds
+    swipeDuration: 300,        // Duration of swipe animation in milliseconds
     swipeDelay: 150,           // Delay before second line starts (milliseconds)
     swipeEasing: 'cubic-bezier(0.4, 0, 0.2, 1)', // Ease in-out curve
     swipeHeight: '4px',        // Height of swipe lines
     swipeLineOpacity: 0.5,     // Opacity of white swipe lines (0-1)
     
     // Blue gradient box
-    gradientBoxHeight: '60px', // Height of blue gradient box
+    gradientBoxHeight: '120px', // Height of blue gradient box
     gradientBoxFadeDuration: 800, // Duration of gradient fade out (milliseconds)
-    gradientBoxColor: 'rgba(59, 130, 246, 0.4)', // Blue gradient color (rgba)
+    gradientBoxColor: 'rgba(53, 158, 255, 0.4)', // Blue gradient color (rgba)
     gradientBoxFadeDelay: 100, // Delay before gradient starts fading (milliseconds)
     
     // Image name reveal
@@ -28,6 +28,14 @@ const HOVER_CONFIG = {
     nameFontSize: '14px',      // Font size for name
     nameColor: '#ffffff',      // Text color
     nameBackgroundColor: 'rgba(79, 136, 243, 0.51)', // Fallback background color
+    namePulsateDuration: 2000, // Duration of pulsate animation cycle (milliseconds)
+    namePulsateIntensity: 0.15, // Pulsate intensity (0-1, how much opacity changes)
+    
+    // Right-to-left swipe line
+    swipeLineRtlDuration: 500, // Duration of right-to-left line animation (milliseconds)
+    swipeLineRtlDelay: 100,   // Delay before right-to-left line starts (milliseconds)
+    swipeLineRtlHeight: '2px', // Height of right-to-left swipe line
+    swipeLineRtlColor: 'rgba(255, 255, 255, 0.6)', // Color of right-to-left swipe line
     
     // Color extraction
     colorSampleSize: 5,        // Size of area to sample color from (pixels)
@@ -183,7 +191,7 @@ const HOVER_CONFIG = {
             pointer-events: none;
         `;
         
-        // Create name container
+        // Create name container (width fits content)
         const nameContainer = document.createElement('div');
         nameContainer.className = 'gallery-hover-name';
         nameContainer.textContent = imageName;
@@ -191,9 +199,10 @@ const HOVER_CONFIG = {
             position: absolute;
             bottom: 0;
             left: 0;
-            right: 0;
+            width: fit-content;
+            max-width: 100%;
             padding: ${HOVER_CONFIG.namePadding};
-            background: ${toRgba(imageColor, HOVER_CONFIG.nameBackgroundOpacity)};
+            background: transparent;
             color: ${HOVER_CONFIG.nameColor};
             font-size: ${HOVER_CONFIG.nameFontSize};
             font-weight: 500;
@@ -201,13 +210,66 @@ const HOVER_CONFIG = {
             transition: transform ${HOVER_CONFIG.nameRevealDuration}ms ${HOVER_CONFIG.swipeEasing};
             transition-delay: ${HOVER_CONFIG.nameRevealDelay}ms;
             white-space: nowrap;
-            overflow: hidden;
+            overflow: visible;
             text-overflow: ellipsis;
+            z-index: 4;
+        `;
+        
+        // Create pulsate background element
+        const nameBackground = document.createElement('div');
+        nameBackground.className = 'gallery-hover-name-bg';
+        nameBackground.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: ${toRgba(imageColor, HOVER_CONFIG.nameBackgroundOpacity)};
+            z-index: -1;
+            animation: pulsate ${HOVER_CONFIG.namePulsateDuration}ms ease-in-out infinite;
+        `;
+        
+        // Add pulsate keyframes if not already added
+        if (!document.getElementById('gallery-hover-keyframes')) {
+            const style = document.createElement('style');
+            style.id = 'gallery-hover-keyframes';
+            style.textContent = `
+                @keyframes pulsate {
+                    0%, 100% {
+                        opacity: ${HOVER_CONFIG.nameBackgroundOpacity};
+                    }
+                    50% {
+                        opacity: ${HOVER_CONFIG.nameBackgroundOpacity * (1 - HOVER_CONFIG.namePulsateIntensity)};
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        // Add background element to name container
+        nameContainer.appendChild(nameBackground);
+        
+        // Create right-to-left swipe line container
+        const rtlLineContainer = document.createElement('div');
+        rtlLineContainer.className = 'gallery-rtl-line-container';
+        rtlLineContainer.style.cssText = `
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            height: ${HOVER_CONFIG.swipeLineRtlHeight};
+            width: 0;
+            background: ${HOVER_CONFIG.swipeLineRtlColor};
+            transform-origin: right center;
+            transform: translateX(0);
+            transition: width ${HOVER_CONFIG.swipeLineRtlDuration}ms ${HOVER_CONFIG.swipeEasing};
+            transition-delay: ${HOVER_CONFIG.swipeLineRtlDelay}ms;
+            z-index: 3;
         `;
         
         overlay.appendChild(gradientBox);
         overlay.appendChild(swipeLine1);
         overlay.appendChild(swipeLine2);
+        overlay.appendChild(rtlLineContainer);
         overlay.appendChild(nameContainer);
         
         return overlay;
@@ -273,6 +335,7 @@ const HOVER_CONFIG = {
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
             const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
+            const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const img = item.querySelector('img');
             
             // Animate swipe lines and gradient box from top to bottom
@@ -298,7 +361,26 @@ const HOVER_CONFIG = {
                 swipeLine1.style.transform = `translateY(${itemHeight}px)`;
                 swipeLine2.style.transform = `translateY(${itemHeight}px)`;
                 
+                // Animate name container
                 nameContainer.style.transform = 'translateX(0)';
+                
+                // Animate right-to-left line after name appears
+                setTimeout(() => {
+                    // Wait for name to be fully visible, then calculate position
+                    requestAnimationFrame(() => {
+                        // Get the name container position and width
+                        const nameRect = nameContainer.getBoundingClientRect();
+                        const itemRect = item.getBoundingClientRect();
+                        const nameLeft = nameRect.left - itemRect.left;
+                        const itemWidth = itemRect.width;
+                        
+                        // Calculate distance from right edge to name start
+                        const distanceToName = itemWidth - nameLeft;
+                        
+                        // Animate line from right to left, stopping at name start
+                        rtlLineContainer.style.width = `${distanceToName}px`;
+                    });
+                }, HOVER_CONFIG.nameRevealDelay + HOVER_CONFIG.nameRevealDuration);
             });
         });
         
@@ -307,6 +389,7 @@ const HOVER_CONFIG = {
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
             const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
+            const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const img = item.querySelector('img');
             
             // Reset zoom on image
@@ -322,11 +405,14 @@ const HOVER_CONFIG = {
             gradientBox.style.opacity = '0';
             gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity 0ms`;
             nameContainer.style.transform = 'translateX(-100%)';
+            rtlLineContainer.style.width = '0';
+            rtlLineContainer.style.transitionDelay = '0ms';
             
             // Reset delay for next hover
             setTimeout(() => {
                 swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeDelay}ms`;
                 gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
+                rtlLineContainer.style.transitionDelay = `${HOVER_CONFIG.swipeLineRtlDelay}ms`;
             }, 50);
         });
     }
