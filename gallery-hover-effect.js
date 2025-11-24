@@ -59,7 +59,7 @@ const HOVER_CONFIG = {
     crtScanlineOpacity: 0.12,  // Opacity of scanlines (0-1)
     crtScanlineHeight: '1px',  // Height of each scanline
     crtScanlineGap: '2px',     // Gap between scanlines
-    crtGlitchIntensity: 15,      // Horizontal glitch displacement in pixels
+    crtGlitchIntensity: 8,      // Horizontal glitch displacement in pixels
     crtGlitchSpeed: 150,         // Glitch animation speed (milliseconds per frame)
     crtChromaticAberration: 5, // Chromatic aberration offset in pixels
     crtBrightness: 1.1,         // Slight brightness increase
@@ -67,8 +67,8 @@ const HOVER_CONFIG = {
     crtSaturation: 1.1,         // Slight saturation increase
     crtWarpBandHeight: '150px',   // Height of warping band
     crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
-    crtWarpBandChance: 1.0,      // Chance of warp band appearing (0-1, 1.0 = always on hover)
-    crtWarpIntensity: 25,        // Intensity of warp distortion in pixels (horizontal displacement) - increased
+    crtWarpBandChance: 0.7,      // Chance of warp band appearing (0-1, 1.0 = always on hover)
+    crtWarpIntensity: 2,        // Intensity of warp distortion in pixels (horizontal displacement) - increased
     crtWarpBandOpacity: 0.8      // Opacity of the warp band overlay (0-1) - increased
 };
 
@@ -196,12 +196,13 @@ const HOVER_CONFIG = {
         // Start the first cycle
         runWarpCycle();
         
-        // Store cleanup function
+        // Store cleanup function as a property (not in dataset, as dataset only stores strings)
         warpBandOverlay.dataset.warpActive = 'true';
-        warpBandOverlay.dataset.warpCleanup = () => {
+        warpBandOverlay._warpCleanup = function() {
             isActive = false;
             if (waveInterval) {
                 clearInterval(waveInterval);
+                waveInterval = null;
             }
             warpBandOverlay.style.opacity = '0';
             warpBandOverlay.style.transform = 'translateY(100%)';
@@ -820,10 +821,10 @@ const HOVER_CONFIG = {
             }
             
             // Stop warp band animation
-            if (warpBandOverlay && warpBandOverlay.dataset.warpCleanup) {
-                warpBandOverlay.dataset.warpCleanup();
+            if (warpBandOverlay && warpBandOverlay._warpCleanup) {
+                warpBandOverlay._warpCleanup();
                 delete warpBandOverlay.dataset.warpActive;
-                delete warpBandOverlay.dataset.warpCleanup;
+                delete warpBandOverlay._warpCleanup;
             }
             
             // Reset zoom and filters on image
