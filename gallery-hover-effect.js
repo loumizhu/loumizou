@@ -738,15 +738,27 @@ const HOVER_CONFIG = {
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
             const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
-            const pulsatingBorder = item.querySelector('.gallery-pulsating-border');
             const img = item.querySelector('img');
+            
+            // Find pulsating border - it's in the image container (parent of img)
+            let pulsatingBorder = null;
+            if (img) {
+                const imgContainer = img.parentElement;
+                if (imgContainer) {
+                    pulsatingBorder = imgContainer.querySelector('.gallery-pulsating-border');
+                }
+            }
+            if (!pulsatingBorder) {
+                pulsatingBorder = item.querySelector('.gallery-pulsating-border');
+            }
             
             // Reset z-index
             item.style.zIndex = '1';
             
-            // Hide pulsating border
+            // Hide pulsating border and stop animation
             if (pulsatingBorder) {
                 pulsatingBorder.style.opacity = '0';
+                pulsatingBorder.style.animation = 'none';
             }
             
             // Stop glitch animation
