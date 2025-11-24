@@ -27,7 +27,7 @@ const HOVER_CONFIG = {
     namePadding: '8px 16px',   // Padding for name container
     nameFontSize: '14px',      // Font size for name
     nameColor: '#ffffff',      // Text color
-    nameBackgroundColor: 'rgba(79, 136, 243, 0.51)', // Fallback background color
+    nameBackgroundColor: 'rgba(10, 255, 83, 0.51)', // Fallback background color
     namePulsateDuration: 2000, // Duration of pulsate animation cycle (milliseconds)
     namePulsateIntensity: 0.15, // Pulsate intensity (0-1, how much opacity changes)
     
@@ -52,13 +52,17 @@ const HOVER_CONFIG = {
     // CRT Shader effects (applied to image, not overlays)
     crtScanlineOpacity: 0.12,  // Opacity of scanlines (0-1)
     crtScanlineHeight: '1px',  // Height of each scanline
-    crtScanlineGap: '3px',     // Gap between scanlines
+    crtScanlineGap: '2px',     // Gap between scanlines
     crtGlitchIntensity: 2,      // Horizontal glitch displacement in pixels
-    crtGlitchSpeed: 50,         // Glitch animation speed (milliseconds per frame)
+    crtGlitchSpeed: 150,         // Glitch animation speed (milliseconds per frame)
     crtChromaticAberration: 1.5, // Chromatic aberration offset in pixels
     crtBrightness: 1.1,         // Slight brightness increase
     crtContrast: 1.05,         // Slight contrast increase
-    crtSaturation: 1.1          // Slight saturation increase
+    crtSaturation: 1.1,         // Slight saturation increase
+    crtWarpBandHeight: '8px',   // Height of warping band
+    crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
+    crtWarpBandChance: 0.3,      // Chance of warp band appearing (0-1, 0.3 = 30%)
+    crtWarpIntensity: 3          // Intensity of warp distortion in pixels
 };
 
 (function() {
@@ -353,12 +357,39 @@ const HOVER_CONFIG = {
             mix-blend-mode: multiply;
         `;
         
+        // Create warping band overlay (TV startup effect)
+        const warpBandOverlay = document.createElement('div');
+        warpBandOverlay.className = 'gallery-crt-warp-band';
+        warpBandOverlay.style.cssText = `
+            position: absolute;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: ${HOVER_CONFIG.crtWarpBandHeight};
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.1) 0%,
+                rgba(255, 255, 255, 0.2) 50%,
+                rgba(255, 255, 255, 0.1) 100%
+            );
+            pointer-events: none;
+            z-index: 6;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: transform ${HOVER_CONFIG.crtWarpBandSpeed}ms linear, opacity 100ms ease-in;
+            filter: blur(0.5px);
+            box-shadow: 
+                0 0 ${HOVER_CONFIG.crtWarpIntensity}px rgba(255, 255, 255, 0.3),
+                inset 0 0 ${HOVER_CONFIG.crtWarpIntensity * 2}px rgba(255, 255, 255, 0.2);
+        `;
+        
         overlay.appendChild(gradientBox);
         overlay.appendChild(swipeLine1);
         overlay.appendChild(swipeLine2);
         overlay.appendChild(rtlLineContainer);
         overlay.appendChild(nameContainer);
         overlay.appendChild(scanlinesOverlay);
+        overlay.appendChild(warpBandOverlay);
         
         return overlay;
     }
@@ -493,6 +524,9 @@ const HOVER_CONFIG = {
                 // Show scanlines
                 scanlinesOverlay.style.opacity = '1';
                 
+                // Start warp band animation (randomly)
+                startWarpBandAnimation(warpBandOverlay, item);
+                
                 // Animate name container
                 nameContainer.style.transform = 'translateX(0)';
                 
@@ -525,12 +559,19 @@ const HOVER_CONFIG = {
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
+            const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
             const img = item.querySelector('img');
             
             // Stop glitch animation
             if (img && img.dataset.glitchInterval) {
                 clearInterval(parseInt(img.dataset.glitchInterval));
                 delete img.dataset.glitchInterval;
+            }
+            
+            // Stop warp band animation
+            if (warpBandOverlay && warpBandOverlay.dataset.warpTimeout) {
+                clearTimeout(parseInt(warpBandOverlay.dataset.warpTimeout));
+                delete warpBandOverlay.dataset.warpTimeout;
             }
             
             // Reset zoom and filters on image
@@ -558,8 +599,10 @@ const HOVER_CONFIG = {
             rtlLineContainer.style.transform = 'translateX(100%)';
             rtlLineContainer.style.transitionDelay = '0ms';
             
-            // Hide scanlines
+            // Hide scanlines and warp band
             scanlinesOverlay.style.opacity = '0';
+            warpBandOverlay.style.opacity = '0';
+            warpBandOverlay.style.transform = 'translateY(100%)';
             
             // Reset delay for next hover
             setTimeout(() => {
