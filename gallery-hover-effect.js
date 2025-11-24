@@ -49,16 +49,16 @@ const HOVER_CONFIG = {
     zoomDuration: 400,         // Duration of zoom animation (milliseconds)
     zoomEasing: 'cubic-bezier(0.4, 0, 1, 1)', // Ease-in curve
     
-    // CRT Shader effects
-    crtScanlineOpacity: 0.15,  // Opacity of scanlines (0-1)
-    crtScanlineHeight: '2px',  // Height of each scanline
-    crtScanlineGap: '2px',     // Gap between scanlines
-    crtCurvature: 0.02,        // Screen curvature amount (0-1, higher = more curved)
-    crtChromaticAberration: 2, // Chromatic aberration offset in pixels
-    crtVignetteOpacity: 0.3,   // Vignette darkness (0-1)
-    crtVignetteSize: 0.8,      // Vignette size (0-1, lower = smaller vignette)
-    crtGlowIntensity: 0.4,     // Glow effect intensity (0-1)
-    crtNoiseOpacity: 0.05      // Noise/grain opacity (0-1)
+    // CRT Shader effects (applied to image, not overlays)
+    crtScanlineOpacity: 0.12,  // Opacity of scanlines (0-1)
+    crtScanlineHeight: '1px',  // Height of each scanline
+    crtScanlineGap: '3px',     // Gap between scanlines
+    crtGlitchIntensity: 2,      // Horizontal glitch displacement in pixels
+    crtGlitchSpeed: 50,         // Glitch animation speed (milliseconds per frame)
+    crtChromaticAberration: 1.5, // Chromatic aberration offset in pixels
+    crtBrightness: 1.1,         // Slight brightness increase
+    crtContrast: 1.05,         // Slight contrast increase
+    crtSaturation: 1.1          // Slight saturation increase
 };
 
 (function() {
@@ -75,6 +75,55 @@ const HOVER_CONFIG = {
         }
         // Fallback for hex or named colors
         return `rgba(0, 0, 0, ${opacity})`;
+    }
+    
+    /**
+     * Start glitch effect on image
+     */
+    function startGlitchEffect(img) {
+        if (img.dataset.glitchInterval) {
+            return; // Already running
+        }
+        
+        const glitchInterval = setInterval(() => {
+            // Random glitch - apply subtle horizontal shift and chromatic aberration
+            if (Math.random() > 0.75) { // 25% chance of glitch per frame
+                const glitchX = (Math.random() - 0.5) * HOVER_CONFIG.crtGlitchIntensity * 2;
+                const chromaOffset = HOVER_CONFIG.crtChromaticAberration + Math.abs(glitchX) * 0.3;
+                
+                // Apply glitch using filter with chromatic aberration
+                img.style.setProperty('filter', `
+                    brightness(${HOVER_CONFIG.crtBrightness}) 
+                    contrast(${HOVER_CONFIG.crtContrast}) 
+                    saturate(${HOVER_CONFIG.crtSaturation})
+                    drop-shadow(${chromaOffset}px 0 0 rgba(255, 0, 0, 0.25))
+                    drop-shadow(-${chromaOffset}px 0 0 rgba(0, 255, 255, 0.25))
+                `, 'important');
+                
+                // Apply subtle horizontal shift using transform (but preserve zoom)
+                const baseTransform = img.dataset.originalTransform || 'none';
+                const zoomTransform = baseTransform !== 'none' 
+                    ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
+                    : `scale(${HOVER_CONFIG.zoomScale})`;
+                img.style.setProperty('transform', `${zoomTransform} translateX(${glitchX}px)`, 'important');
+                
+                // Reset after short delay
+                setTimeout(() => {
+                    if (img.dataset.glitchInterval) {
+                        // Reset transform to just zoom
+                        img.style.setProperty('transform', zoomTransform, 'important');
+                        // Reset filter to base CRT filters
+                        img.style.setProperty('filter', `
+                            brightness(${HOVER_CONFIG.crtBrightness}) 
+                            contrast(${HOVER_CONFIG.crtContrast}) 
+                            saturate(${HOVER_CONFIG.crtSaturation})
+                        `, 'important');
+                    }
+                }, HOVER_CONFIG.crtGlitchSpeed * 0.4);
+            }
+        }, HOVER_CONFIG.crtGlitchSpeed);
+        
+        img.dataset.glitchInterval = glitchInterval.toString();
     }
     
     /**
@@ -281,7 +330,7 @@ const HOVER_CONFIG = {
             z-index: 3;
         `;
         
-        // Create CRT scanlines overlay
+        // Create CRT scanlines overlay (subtle, doesn't obscure image)
         const scanlinesOverlay = document.createElement('div');
         scanlinesOverlay.className = 'gallery-crt-scanlines';
         scanlinesOverlay.style.cssText = `
@@ -301,112 +350,7 @@ const HOVER_CONFIG = {
             z-index: 5;
             opacity: 0;
             transition: opacity 200ms ease-in;
-        `;
-        
-        // Create CRT screen curvature effect (using CSS filter and transform)
-        const curvatureOverlay = document.createElement('div');
-        curvatureOverlay.className = 'gallery-crt-curvature';
-        curvatureOverlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 6;
-            opacity: 0;
-            transition: opacity 200ms ease-in;
-            background: radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(0, 0, 0, ${HOVER_CONFIG.crtCurvature * 0.5}) 100%);
-        `;
-        
-        // Create chromatic aberration effect (color separation)
-        const chromaticOverlay = document.createElement('div');
-        chromaticOverlay.className = 'gallery-crt-chromatic';
-        chromaticOverlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 7;
-            opacity: 0;
-            transition: opacity 200ms ease-in;
-            box-shadow: 
-                inset ${HOVER_CONFIG.crtChromaticAberration}px 0 0 rgba(255, 0, 0, 0.3),
-                inset -${HOVER_CONFIG.crtChromaticAberration}px 0 0 rgba(0, 255, 255, 0.3);
-        `;
-        
-        // Create vignette effect
-        const vignetteOverlay = document.createElement('div');
-        vignetteOverlay.className = 'gallery-crt-vignette';
-        const vignetteSize = HOVER_CONFIG.crtVignetteSize * 100;
-        vignetteOverlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 8;
-            opacity: 0;
-            transition: opacity 200ms ease-in;
-            background: radial-gradient(
-                ellipse at center,
-                transparent ${vignetteSize}%,
-                rgba(0, 0, 0, ${HOVER_CONFIG.crtVignetteOpacity}) 100%
-            );
-        `;
-        
-        // Create glow effect
-        const glowOverlay = document.createElement('div');
-        glowOverlay.className = 'gallery-crt-glow';
-        glowOverlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 9;
-            opacity: 0;
-            transition: opacity 200ms ease-in;
-            box-shadow: 
-                inset 0 0 ${HOVER_CONFIG.crtGlowIntensity * 50}px rgba(255, 255, 255, ${HOVER_CONFIG.crtGlowIntensity * 0.3}),
-                inset 0 0 ${HOVER_CONFIG.crtGlowIntensity * 100}px rgba(100, 150, 255, ${HOVER_CONFIG.crtGlowIntensity * 0.2});
-        `;
-        
-        // Create noise/grain texture
-        const noiseOverlay = document.createElement('div');
-        noiseOverlay.className = 'gallery-crt-noise';
-        // Create a canvas-based noise texture
-        const noiseCanvas = document.createElement('canvas');
-        noiseCanvas.width = 200;
-        noiseCanvas.height = 200;
-        const noiseCtx = noiseCanvas.getContext('2d');
-        const imageData = noiseCtx.createImageData(200, 200);
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            const value = Math.random() * 255;
-            data[i] = value;     // R
-            data[i + 1] = value; // G
-            data[i + 2] = value; // B
-            data[i + 3] = 255;   // A
-        }
-        noiseCtx.putImageData(imageData, 0, 0);
-        noiseOverlay.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            pointer-events: none;
-            z-index: 10;
-            opacity: 0;
-            transition: opacity 200ms ease-in;
-            background-image: url(${noiseCanvas.toDataURL()});
-            background-size: 200px 200px;
-            mix-blend-mode: overlay;
+            mix-blend-mode: multiply;
         `;
         
         overlay.appendChild(gradientBox);
@@ -415,11 +359,6 @@ const HOVER_CONFIG = {
         overlay.appendChild(rtlLineContainer);
         overlay.appendChild(nameContainer);
         overlay.appendChild(scanlinesOverlay);
-        overlay.appendChild(curvatureOverlay);
-        overlay.appendChild(chromaticOverlay);
-        overlay.appendChild(vignetteOverlay);
-        overlay.appendChild(glowOverlay);
-        overlay.appendChild(noiseOverlay);
         
         return overlay;
     }
@@ -507,18 +446,13 @@ const HOVER_CONFIG = {
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
-            const curvatureOverlay = overlay.querySelector('.gallery-crt-curvature');
-            const chromaticOverlay = overlay.querySelector('.gallery-crt-chromatic');
-            const vignetteOverlay = overlay.querySelector('.gallery-crt-vignette');
-            const glowOverlay = overlay.querySelector('.gallery-crt-glow');
-            const noiseOverlay = overlay.querySelector('.gallery-crt-noise');
             const img = item.querySelector('img');
             
             // Animate swipe lines and gradient box from top to bottom
             requestAnimationFrame(() => {
                 const itemHeight = item.offsetHeight;
                 
-                // Zoom in the image
+                // Zoom in the image and apply CRT effects
                 if (img) {
                     const originalTransform = img.dataset.originalTransform || 'none';
                     // Always apply zoom, combining with existing transform if present
@@ -530,6 +464,16 @@ const HOVER_CONFIG = {
                     } else {
                         img.style.setProperty('transform', `scale(${HOVER_CONFIG.zoomScale})`, 'important');
                     }
+                    
+                    // Apply CRT filters to image
+                    img.style.setProperty('filter', `
+                        brightness(${HOVER_CONFIG.crtBrightness}) 
+                        contrast(${HOVER_CONFIG.crtContrast}) 
+                        saturate(${HOVER_CONFIG.crtSaturation})
+                    `, 'important');
+                    
+                    // Start glitch animation
+                    startGlitchEffect(img);
                 }
                 
                 // Animate gradient box first (it follows the lines)
@@ -546,13 +490,8 @@ const HOVER_CONFIG = {
                 swipeLine1.style.transform = `translateY(${itemHeight}px)`;
                 swipeLine2.style.transform = `translateY(${itemHeight}px)`;
                 
-                // Show CRT effects
+                // Show scanlines
                 scanlinesOverlay.style.opacity = '1';
-                curvatureOverlay.style.opacity = '1';
-                chromaticOverlay.style.opacity = '1';
-                vignetteOverlay.style.opacity = '1';
-                glowOverlay.style.opacity = '1';
-                noiseOverlay.style.opacity = '1';
                 
                 // Animate name container
                 nameContainer.style.transform = 'translateX(0)';
@@ -586,14 +525,15 @@ const HOVER_CONFIG = {
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
-            const curvatureOverlay = overlay.querySelector('.gallery-crt-curvature');
-            const chromaticOverlay = overlay.querySelector('.gallery-crt-chromatic');
-            const vignetteOverlay = overlay.querySelector('.gallery-crt-vignette');
-            const glowOverlay = overlay.querySelector('.gallery-crt-glow');
-            const noiseOverlay = overlay.querySelector('.gallery-crt-noise');
             const img = item.querySelector('img');
             
-            // Reset zoom on image
+            // Stop glitch animation
+            if (img && img.dataset.glitchInterval) {
+                clearInterval(parseInt(img.dataset.glitchInterval));
+                delete img.dataset.glitchInterval;
+            }
+            
+            // Reset zoom and filters on image
             if (img) {
                 const originalTransform = img.dataset.originalTransform || 'none';
                 if (originalTransform !== 'none') {
@@ -601,6 +541,10 @@ const HOVER_CONFIG = {
                 } else {
                     img.style.removeProperty('transform');
                 }
+                // Reset filters
+                img.style.removeProperty('filter');
+                // Reset any glitch transform
+                img.style.clipPath = '';
             }
             
             // Reset animations
@@ -614,13 +558,8 @@ const HOVER_CONFIG = {
             rtlLineContainer.style.transform = 'translateX(100%)';
             rtlLineContainer.style.transitionDelay = '0ms';
             
-            // Hide CRT effects
+            // Hide scanlines
             scanlinesOverlay.style.opacity = '0';
-            curvatureOverlay.style.opacity = '0';
-            chromaticOverlay.style.opacity = '0';
-            vignetteOverlay.style.opacity = '0';
-            glowOverlay.style.opacity = '0';
-            noiseOverlay.style.opacity = '0';
             
             // Reset delay for next hover
             setTimeout(() => {
