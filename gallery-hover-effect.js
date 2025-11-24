@@ -110,10 +110,20 @@ const HOVER_CONFIG = {
             z-index: 1;
         `;
         
-        // Set canvas size to match image
+        // Set canvas size to match displayed image size (not natural size for better performance)
         const imgRect = img.getBoundingClientRect();
-        canvas.width = img.naturalWidth || img.width || imgRect.width;
-        canvas.height = img.naturalHeight || img.height || imgRect.height;
+        const displayWidth = Math.floor(imgRect.width);
+        const displayHeight = Math.floor(imgRect.height);
+        
+        // Use displayed size for canvas (scaled down for performance if too large)
+        const maxCanvasSize = 800; // Limit canvas size for performance
+        const scale = Math.min(1, maxCanvasSize / Math.max(displayWidth, displayHeight));
+        
+        canvas.width = Math.floor(displayWidth * scale);
+        canvas.height = Math.floor(displayHeight * scale);
+        
+        // Store scale for later use
+        canvas.dataset.scale = scale;
         
         const ctx = canvas.getContext('2d');
         
@@ -122,8 +132,16 @@ const HOVER_CONFIG = {
         imageObj.crossOrigin = 'anonymous';
         imageObj.onload = function() {
             ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
+            // Store original image data for warping
+            canvas.dataset.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         };
         imageObj.src = img.src;
+        
+        // Also handle case where image is already loaded
+        if (img.complete && img.naturalWidth > 0) {
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            canvas.dataset.originalImageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        }
         
         // Insert canvas after image
         const imgParent = img.parentElement;
@@ -148,19 +166,9 @@ const HOVER_CONFIG = {
         const width = canvas.width;
         const height = canvas.height;
         
-        // Get original image data
+        // Get original image data (should already be stored when canvas was created)
         if (!canvas.dataset.originalImageData) {
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = width;
-            tempCanvas.height = height;
-            const tempCtx = tempCanvas.getContext('2d');
-            const img = canvas.dataset.sourceImg;
-            if (img && img.complete) {
-                tempCtx.drawImage(img, 0, 0, width, height);
-                canvas.dataset.originalImageData = tempCtx.getImageData(0, 0, width, height);
-            } else {
-                return; // Image not loaded yet
-            }
+            return; // Image data not ready yet
         }
         
         const sourceData = canvas.dataset.originalImageData;
