@@ -17,7 +17,7 @@ const HOVER_CONFIG = {
     // Blue gradient box
     gradientBoxHeight: '200px', // Height of blue gradient box
     gradientBoxFadeDuration: 800, // Duration of gradient fade out (milliseconds)
-    gradientBoxColor: 'rgba(59, 130, 246, 0.6)', // Blue gradient color (rgba) - increased opacity for visibility
+    gradientBoxColor: 'rgba(59, 130, 246, 0.9)', // Blue gradient color (rgba) - increased opacity for visibility
     gradientBoxFadeDelay: 300, // Delay before gradient starts fading (milliseconds) - increased delay
     
     // Image name reveal
@@ -46,8 +46,14 @@ const HOVER_CONFIG = {
     
     // Image zoom effect
     zoomScale: 1.08,           // Zoom scale factor (1.08 = 8% zoom)
-    zoomDuration: 400,         // Duration of zoom animation (milliseconds)
-    zoomEasing: 'cubic-bezier(0.4, 0, 1, 1)', // Ease-in curve
+    zoomDuration: 600,         // Duration of zoom animation (milliseconds) - increased for smoother animation
+    zoomEasing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Smooth ease-in-out curve
+    
+    // Pulsating border
+    borderPulsateDuration: 2000, // Duration of border pulsate cycle (milliseconds)
+    borderPulsateIntensity: 0.3,  // Border opacity pulsate intensity (0-1)
+    borderWidth: '2px',         // Border width
+    borderColor: 'rgba(255, 255, 255, 0.8)' // Border color
     
     // CRT Shader effects (applied to image, not overlays)
     crtScanlineOpacity: 0.12,  // Opacity of scanlines (0-1)
@@ -542,6 +548,44 @@ const HOVER_CONFIG = {
             img.style.transformOrigin = 'center center';
             img.style.willChange = 'transform'; // Optimize for transform animations
             
+            // Create pulsating border element
+            const pulsatingBorder = document.createElement('div');
+            pulsatingBorder.className = 'gallery-pulsating-border';
+            pulsatingBorder.style.cssText = `
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                border: ${HOVER_CONFIG.borderWidth} solid ${HOVER_CONFIG.borderColor};
+                border-radius: 0;
+                pointer-events: none;
+                z-index: 11;
+                opacity: 0;
+                transition: opacity 200ms ease-in;
+                animation: borderPulsate ${HOVER_CONFIG.borderPulsateDuration}ms ease-in-out infinite;
+            `;
+            
+            // Add border pulsate keyframes if not already added
+            if (!document.getElementById('gallery-border-pulsate-keyframes')) {
+                const style = document.createElement('style');
+                style.id = 'gallery-border-pulsate-keyframes';
+                const baseOpacity = parseFloat(HOVER_CONFIG.borderColor.match(/[\d.]+(?=\)$)/)?.[0] || '0.8');
+                style.textContent = `
+                    @keyframes borderPulsate {
+                        0%, 100% {
+                            opacity: ${baseOpacity};
+                        }
+                        50% {
+                            opacity: ${baseOpacity * (1 - HOVER_CONFIG.borderPulsateIntensity)};
+                        }
+                    }
+                `;
+                document.head.appendChild(style);
+            }
+            
+            item.appendChild(pulsatingBorder);
+            
             // Store original transform for later use
             if (hasOriginalTransform) {
                 img.dataset.originalTransform = originalTransform;
@@ -562,11 +606,20 @@ const HOVER_CONFIG = {
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
             const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
+            const pulsatingBorder = item.querySelector('.gallery-pulsating-border');
             const img = item.querySelector('img');
+            
+            // Bring hovered item above other elements
+            item.style.zIndex = '100';
             
             // Animate swipe lines and gradient box from top to bottom
             requestAnimationFrame(() => {
                 const itemHeight = item.offsetHeight;
+                
+                // Show pulsating border
+                if (pulsatingBorder) {
+                    pulsatingBorder.style.opacity = '1';
+                }
                 
                 // Zoom in the image and apply CRT effects
                 if (img) {
@@ -656,7 +709,16 @@ const HOVER_CONFIG = {
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
             const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
+            const pulsatingBorder = item.querySelector('.gallery-pulsating-border');
             const img = item.querySelector('img');
+            
+            // Reset z-index
+            item.style.zIndex = '1';
+            
+            // Hide pulsating border
+            if (pulsatingBorder) {
+                pulsatingBorder.style.opacity = '0';
+            }
             
             // Stop glitch animation
             if (img && img.dataset.glitchInterval) {
