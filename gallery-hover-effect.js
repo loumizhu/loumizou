@@ -626,6 +626,8 @@ const HOVER_CONFIG = {
                     const originalTransform = img.dataset.originalTransform || 'none';
                     // Always apply zoom, combining with existing transform if present
                     // Use !important to ensure it overrides any conflicting CSS
+                    // Apply smooth transition
+                    img.style.transition = `transform ${HOVER_CONFIG.zoomDuration}ms ${HOVER_CONFIG.zoomEasing}`;
                     if (originalTransform !== 'none') {
                         // Combine transforms: apply scale, then original transform
                         // This ensures the scale is applied relative to the image center
