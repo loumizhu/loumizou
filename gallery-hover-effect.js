@@ -47,7 +47,18 @@ const HOVER_CONFIG = {
     // Image zoom effect
     zoomScale: 1.08,           // Zoom scale factor (1.08 = 8% zoom)
     zoomDuration: 400,         // Duration of zoom animation (milliseconds)
-    zoomEasing: 'cubic-bezier(0.4, 0, 1, 1)' // Ease-in curve
+    zoomEasing: 'cubic-bezier(0.4, 0, 1, 1)', // Ease-in curve
+    
+    // CRT Shader effects
+    crtScanlineOpacity: 0.15,  // Opacity of scanlines (0-1)
+    crtScanlineHeight: '2px',  // Height of each scanline
+    crtScanlineGap: '2px',     // Gap between scanlines
+    crtCurvature: 0.02,        // Screen curvature amount (0-1, higher = more curved)
+    crtChromaticAberration: 2, // Chromatic aberration offset in pixels
+    crtVignetteOpacity: 0.3,   // Vignette darkness (0-1)
+    crtVignetteSize: 0.8,      // Vignette size (0-1, lower = smaller vignette)
+    crtGlowIntensity: 0.4,     // Glow effect intensity (0-1)
+    crtNoiseOpacity: 0.05      // Noise/grain opacity (0-1)
 };
 
 (function() {
@@ -270,11 +281,145 @@ const HOVER_CONFIG = {
             z-index: 3;
         `;
         
+        // Create CRT scanlines overlay
+        const scanlinesOverlay = document.createElement('div');
+        scanlinesOverlay.className = 'gallery-crt-scanlines';
+        scanlinesOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent,
+                transparent ${HOVER_CONFIG.crtScanlineGap},
+                rgba(0, 0, 0, ${HOVER_CONFIG.crtScanlineOpacity}) ${HOVER_CONFIG.crtScanlineGap},
+                rgba(0, 0, 0, ${HOVER_CONFIG.crtScanlineOpacity}) calc(${HOVER_CONFIG.crtScanlineGap} + ${HOVER_CONFIG.crtScanlineHeight})
+            );
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+        `;
+        
+        // Create CRT screen curvature effect (using CSS filter and transform)
+        const curvatureOverlay = document.createElement('div');
+        curvatureOverlay.className = 'gallery-crt-curvature';
+        curvatureOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 6;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+            background: radial-gradient(ellipse at center, transparent 0%, transparent 60%, rgba(0, 0, 0, ${HOVER_CONFIG.crtCurvature * 0.5}) 100%);
+        `;
+        
+        // Create chromatic aberration effect (color separation)
+        const chromaticOverlay = document.createElement('div');
+        chromaticOverlay.className = 'gallery-crt-chromatic';
+        chromaticOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 7;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+            box-shadow: 
+                inset ${HOVER_CONFIG.crtChromaticAberration}px 0 0 rgba(255, 0, 0, 0.3),
+                inset -${HOVER_CONFIG.crtChromaticAberration}px 0 0 rgba(0, 255, 255, 0.3);
+        `;
+        
+        // Create vignette effect
+        const vignetteOverlay = document.createElement('div');
+        vignetteOverlay.className = 'gallery-crt-vignette';
+        const vignetteSize = HOVER_CONFIG.crtVignetteSize * 100;
+        vignetteOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 8;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+            background: radial-gradient(
+                ellipse at center,
+                transparent ${vignetteSize}%,
+                rgba(0, 0, 0, ${HOVER_CONFIG.crtVignetteOpacity}) 100%
+            );
+        `;
+        
+        // Create glow effect
+        const glowOverlay = document.createElement('div');
+        glowOverlay.className = 'gallery-crt-glow';
+        glowOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 9;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+            box-shadow: 
+                inset 0 0 ${HOVER_CONFIG.crtGlowIntensity * 50}px rgba(255, 255, 255, ${HOVER_CONFIG.crtGlowIntensity * 0.3}),
+                inset 0 0 ${HOVER_CONFIG.crtGlowIntensity * 100}px rgba(100, 150, 255, ${HOVER_CONFIG.crtGlowIntensity * 0.2});
+        `;
+        
+        // Create noise/grain texture
+        const noiseOverlay = document.createElement('div');
+        noiseOverlay.className = 'gallery-crt-noise';
+        // Create a canvas-based noise texture
+        const noiseCanvas = document.createElement('canvas');
+        noiseCanvas.width = 200;
+        noiseCanvas.height = 200;
+        const noiseCtx = noiseCanvas.getContext('2d');
+        const imageData = noiseCtx.createImageData(200, 200);
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            const value = Math.random() * 255;
+            data[i] = value;     // R
+            data[i + 1] = value; // G
+            data[i + 2] = value; // B
+            data[i + 3] = 255;   // A
+        }
+        noiseCtx.putImageData(imageData, 0, 0);
+        noiseOverlay.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 200ms ease-in;
+            background-image: url(${noiseCanvas.toDataURL()});
+            background-size: 200px 200px;
+            mix-blend-mode: overlay;
+        `;
+        
         overlay.appendChild(gradientBox);
         overlay.appendChild(swipeLine1);
         overlay.appendChild(swipeLine2);
         overlay.appendChild(rtlLineContainer);
         overlay.appendChild(nameContainer);
+        overlay.appendChild(scanlinesOverlay);
+        overlay.appendChild(curvatureOverlay);
+        overlay.appendChild(chromaticOverlay);
+        overlay.appendChild(vignetteOverlay);
+        overlay.appendChild(glowOverlay);
+        overlay.appendChild(noiseOverlay);
         
         return overlay;
     }
@@ -361,6 +506,12 @@ const HOVER_CONFIG = {
             const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
+            const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
+            const curvatureOverlay = overlay.querySelector('.gallery-crt-curvature');
+            const chromaticOverlay = overlay.querySelector('.gallery-crt-chromatic');
+            const vignetteOverlay = overlay.querySelector('.gallery-crt-vignette');
+            const glowOverlay = overlay.querySelector('.gallery-crt-glow');
+            const noiseOverlay = overlay.querySelector('.gallery-crt-noise');
             const img = item.querySelector('img');
             
             // Animate swipe lines and gradient box from top to bottom
@@ -395,6 +546,14 @@ const HOVER_CONFIG = {
                 swipeLine1.style.transform = `translateY(${itemHeight}px)`;
                 swipeLine2.style.transform = `translateY(${itemHeight}px)`;
                 
+                // Show CRT effects
+                scanlinesOverlay.style.opacity = '1';
+                curvatureOverlay.style.opacity = '1';
+                chromaticOverlay.style.opacity = '1';
+                vignetteOverlay.style.opacity = '1';
+                glowOverlay.style.opacity = '1';
+                noiseOverlay.style.opacity = '1';
+                
                 // Animate name container
                 nameContainer.style.transform = 'translateX(0)';
                 
@@ -426,6 +585,12 @@ const HOVER_CONFIG = {
             const gradientBox = overlay.querySelector('.gallery-gradient-box');
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
+            const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
+            const curvatureOverlay = overlay.querySelector('.gallery-crt-curvature');
+            const chromaticOverlay = overlay.querySelector('.gallery-crt-chromatic');
+            const vignetteOverlay = overlay.querySelector('.gallery-crt-vignette');
+            const glowOverlay = overlay.querySelector('.gallery-crt-glow');
+            const noiseOverlay = overlay.querySelector('.gallery-crt-noise');
             const img = item.querySelector('img');
             
             // Reset zoom on image
@@ -448,6 +613,14 @@ const HOVER_CONFIG = {
             nameContainer.style.transform = 'translateX(-100%)';
             rtlLineContainer.style.transform = 'translateX(100%)';
             rtlLineContainer.style.transitionDelay = '0ms';
+            
+            // Hide CRT effects
+            scanlinesOverlay.style.opacity = '0';
+            curvatureOverlay.style.opacity = '0';
+            chromaticOverlay.style.opacity = '0';
+            vignetteOverlay.style.opacity = '0';
+            glowOverlay.style.opacity = '0';
+            noiseOverlay.style.opacity = '0';
             
             // Reset delay for next hover
             setTimeout(() => {
