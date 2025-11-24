@@ -59,7 +59,7 @@ const HOVER_CONFIG = {
     crtBrightness: 1.1,         // Slight brightness increase
     crtContrast: 1.05,         // Slight contrast increase
     crtSaturation: 1.1,         // Slight saturation increase
-    crtWarpBandHeight: '8px',   // Height of warping band
+    crtWarpBandHeight: '25px',   // Height of warping band
     crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
     crtWarpBandChance: 0.3,      // Chance of warp band appearing (0-1, 0.3 = 30%)
     crtWarpIntensity: 3          // Intensity of warp distortion in pixels
@@ -361,7 +361,8 @@ const HOVER_CONFIG = {
             white-space: nowrap;
             overflow: visible;
             text-overflow: ellipsis;
-            z-index: 4;
+            z-index: 10;
+            pointer-events: none;
         `;
         
         // Create pulsate background element
@@ -442,6 +443,7 @@ const HOVER_CONFIG = {
         // Create warping band overlay (TV startup effect)
         const warpBandOverlay = document.createElement('div');
         warpBandOverlay.className = 'gallery-crt-warp-band';
+        const warpBandHeightNum = parseFloat(HOVER_CONFIG.crtWarpBandHeight);
         warpBandOverlay.style.cssText = `
             position: absolute;
             left: 0;
@@ -450,19 +452,19 @@ const HOVER_CONFIG = {
             height: ${HOVER_CONFIG.crtWarpBandHeight};
             background: linear-gradient(
                 to bottom,
-                rgba(255, 255, 255, 0.1) 0%,
-                rgba(255, 255, 255, 0.2) 50%,
-                rgba(255, 255, 255, 0.1) 100%
+                rgba(255, 255, 255, 0.15) 0%,
+                rgba(255, 255, 255, 0.4) 50%,
+                rgba(255, 255, 255, 0.15) 100%
             );
             pointer-events: none;
             z-index: 6;
             opacity: 0;
             transform: translateY(100%);
-            transition: transform ${HOVER_CONFIG.crtWarpBandSpeed}ms linear, opacity 100ms ease-in;
-            filter: blur(0.5px);
+            transition: transform ${HOVER_CONFIG.crtWarpBandSpeed}ms linear, opacity 150ms ease-in;
+            filter: blur(1px);
             box-shadow: 
-                0 0 ${HOVER_CONFIG.crtWarpIntensity}px rgba(255, 255, 255, 0.3),
-                inset 0 0 ${HOVER_CONFIG.crtWarpIntensity * 2}px rgba(255, 255, 255, 0.2);
+                0 0 ${HOVER_CONFIG.crtWarpIntensity * 2}px rgba(255, 255, 255, 0.4),
+                inset 0 0 ${HOVER_CONFIG.crtWarpIntensity * 3}px rgba(255, 255, 255, 0.3);
         `;
         
         overlay.appendChild(gradientBox);
@@ -559,6 +561,7 @@ const HOVER_CONFIG = {
             const nameContainer = overlay.querySelector('.gallery-hover-name');
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
+            const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
             const img = item.querySelector('img');
             
             // Animate swipe lines and gradient box from top to bottom
@@ -590,9 +593,20 @@ const HOVER_CONFIG = {
                 }
                 
                 // Animate gradient box first (it follows the lines)
-                gradientBox.style.opacity = '1';
+                // Reset position first
+                gradientBox.style.transition = 'none';
+                gradientBox.style.transform = 'translateY(-100%)';
+                gradientBox.style.opacity = '0';
+                
+                // Force reflow
+                gradientBox.offsetHeight;
+                
+                // Now animate
                 gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
-                gradientBox.style.transform = `translateY(${itemHeight}px)`;
+                gradientBox.style.opacity = '1';
+                requestAnimationFrame(() => {
+                    gradientBox.style.transform = `translateY(${itemHeight}px)`;
+                });
                 
                 // Start fading gradient box after it has moved a bit (increased delay for visibility)
                 setTimeout(() => {
