@@ -89,6 +89,150 @@ const HOVER_CONFIG = {
     }
     
     /**
+     * Create canvas-based warp effect (water-like distortion)
+     */
+    function createWarpCanvas(img, item) {
+        // Check if canvas already exists
+        if (img.dataset.warpCanvas) {
+            return img.dataset.warpCanvas;
+        }
+        
+        // Create canvas element
+        const canvas = document.createElement('canvas');
+        canvas.className = 'gallery-warp-canvas';
+        canvas.style.cssText = `
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        `;
+        
+        // Set canvas size to match image
+        const imgRect = img.getBoundingClientRect();
+        canvas.width = img.naturalWidth || img.width || imgRect.width;
+        canvas.height = img.naturalHeight || img.height || imgRect.height;
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Draw original image to canvas
+        const imageObj = new Image();
+        imageObj.crossOrigin = 'anonymous';
+        imageObj.onload = function() {
+            ctx.drawImage(imageObj, 0, 0, canvas.width, canvas.height);
+        };
+        imageObj.src = img.src;
+        
+        // Insert canvas after image
+        const imgParent = img.parentElement;
+        if (imgParent) {
+            imgParent.insertBefore(canvas, img.nextSibling);
+            // Hide original image
+            img.style.opacity = '0';
+        }
+        
+        // Store reference
+        img.dataset.warpCanvas = canvas;
+        canvas.dataset.sourceImg = img;
+        
+        return canvas;
+    }
+    
+    /**
+     * Apply water-like warp distortion to canvas
+     */
+    function applyWarpToCanvas(canvas, bandY, bandHeight, intensity, time) {
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // Get original image data
+        if (!canvas.dataset.originalImageData) {
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = width;
+            tempCanvas.height = height;
+            const tempCtx = tempCanvas.getContext('2d');
+            const img = canvas.dataset.sourceImg;
+            if (img && img.complete) {
+                tempCtx.drawImage(img, 0, 0, width, height);
+                canvas.dataset.originalImageData = tempCtx.getImageData(0, 0, width, height);
+            } else {
+                return; // Image not loaded yet
+            }
+        }
+        
+        const sourceData = canvas.dataset.originalImageData;
+        const outputData = ctx.createImageData(width, height);
+        
+        // Wave parameters
+        const waveFrequency = 8; // Number of waves
+        const waveSpeed = 0.02;
+        const maxDisplacement = intensity * 15; // Maximum pixel displacement
+        
+        // Optimize: sample every 2 pixels for better performance
+        const step = 2;
+        
+        // Apply displacement mapping (optimized with step sampling)
+        for (let y = 0; y < height; y += step) {
+            for (let x = 0; x < width; x += step) {
+                // Calculate distance from warp band center
+                const bandCenter = bandY * (height / canvas.offsetHeight);
+                const distFromBand = Math.abs(y - bandCenter);
+                const bandRadius = (bandHeight * (height / canvas.offsetHeight)) / 2;
+                
+                // Calculate wave intensity (strongest at band center, fades out)
+                const waveIntensity = Math.max(0, 1 - (distFromBand / bandRadius));
+                
+                if (waveIntensity > 0) {
+                    // Create wave displacement
+                    const waveX = (x / width) * Math.PI * 2 * waveFrequency;
+                    const waveY = (y / height) * Math.PI * 2;
+                    const displacementX = Math.sin(waveX + time * waveSpeed) * maxDisplacement * waveIntensity;
+                    const displacementY = Math.cos(waveY + time * waveSpeed) * maxDisplacement * 0.3 * waveIntensity;
+                    
+                    // Calculate source pixel position with displacement
+                    const sourceX = Math.floor(x + displacementX);
+                    const sourceY = Math.floor(y + displacementY);
+                    
+                    // Get pixel from source (with bounds checking)
+                    if (sourceX >= 0 && sourceX < width && sourceY >= 0 && sourceY < height) {
+                        const sourceIndex = (sourceY * width + sourceX) * 4;
+                        
+                        // Fill a block of pixels (step x step) for performance
+                        for (let dy = 0; dy < step && (y + dy) < height; dy++) {
+                            for (let dx = 0; dx < step && (x + dx) < width; dx++) {
+                                const outputIndex = ((y + dy) * width + (x + dx)) * 4;
+                                outputData.data[outputIndex] = sourceData.data[sourceIndex];
+                                outputData.data[outputIndex + 1] = sourceData.data[sourceIndex + 1];
+                                outputData.data[outputIndex + 2] = sourceData.data[sourceIndex + 2];
+                                outputData.data[outputIndex + 3] = sourceData.data[sourceIndex + 3];
+                            }
+                        }
+                    }
+                } else {
+                    // No distortion, copy original pixel block
+                    for (let dy = 0; dy < step && (y + dy) < height; dy++) {
+                        for (let dx = 0; dx < step && (x + dx) < width; dx++) {
+                            const sourceIndex = ((y + dy) * width + (x + dx)) * 4;
+                            const outputIndex = ((y + dy) * width + (x + dx)) * 4;
+                            
+                            outputData.data[outputIndex] = sourceData.data[sourceIndex];
+                            outputData.data[outputIndex + 1] = sourceData.data[sourceIndex + 1];
+                            outputData.data[outputIndex + 2] = sourceData.data[sourceIndex + 2];
+                            outputData.data[outputIndex + 3] = sourceData.data[sourceIndex + 3];
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Draw warped image to canvas
+        ctx.putImageData(outputData, 0, 0);
+    }
+    
+    /**
      * Start warp band animation (TV startup effect) - loops continuously while hovering
      */
     function startWarpBandAnimation(warpBandOverlay, item) {
@@ -105,9 +249,14 @@ const HOVER_CONFIG = {
         
         if (!img) return;
         
+        // Create canvas for warping
+        const warpCanvas = createWarpCanvas(img, item);
+        if (!warpCanvas) return;
+        
         // Store references for cleanup
         let waveInterval = null;
         let isActive = true;
+        let animationTime = 0;
         
         // Function to run one warp band cycle
         function runWarpCycle() {
@@ -136,29 +285,35 @@ const HOVER_CONFIG = {
                 ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
                 : `scale(${HOVER_CONFIG.zoomScale})`;
             
-            // Animate the wave during the band pass - create a more visible distortion
+            // Animate the wave during the band pass using requestAnimationFrame for smooth performance
             let waveFrame = 0;
             const totalFrames = Math.ceil(HOVER_CONFIG.crtWarpBandSpeed / 16); // ~60fps
-            waveInterval = setInterval(() => {
-                if (!isActive) {
-                    clearInterval(waveInterval);
+            let lastFrameTime = performance.now();
+            
+            function animateWarp(currentTime) {
+                if (!isActive) return;
+                
+                const deltaTime = currentTime - lastFrameTime;
+                lastFrameTime = currentTime;
+                
+                // Throttle to ~30fps for performance (every ~33ms)
+                if (deltaTime < 33) {
+                    requestAnimationFrame(animateWarp);
                     return;
                 }
                 
                 waveFrame++;
                 const progress = waveFrame / totalFrames;
+                
                 if (progress > 1) {
-                    clearInterval(waveInterval);
-                    // Restore base filters and remove clip-path at end of cycle
-                    if (img.dataset.glitchInterval) {
-                        img.style.setProperty('filter', `
-                            brightness(${HOVER_CONFIG.crtBrightness}) 
-                            contrast(${HOVER_CONFIG.crtContrast}) 
-                            saturate(${HOVER_CONFIG.crtSaturation})
-                        `, 'important');
-                        img.style.setProperty('transform', zoomTransform, 'important');
-                        img.style.setProperty('clip-path', 'none', 'important');
+                    // Reset canvas to original image at end of cycle
+                    if (warpCanvas && warpCanvas.dataset.originalImageData) {
+                        const ctx = warpCanvas.getContext('2d');
+                        ctx.putImageData(warpCanvas.dataset.originalImageData, 0, 0);
                     }
+                    animationTime = 0;
+                    waveFrame = 0;
+                    
                     // Reset band position and start next cycle
                     warpBandOverlay.style.opacity = '0';
                     warpBandOverlay.style.transform = 'translateY(100%)';
@@ -178,70 +333,43 @@ const HOVER_CONFIG = {
                 const bandPosition = 1 - progress; // Invert so 0 is bottom, 1 is top
                 const bandY = bandPosition * itemHeight;
                 
-                // Create real shader-like wave distortion that follows the band
-                const waveFrequency = 12; // Number of waves across the width
-                const waveAmplitude = warpAmount * 2; // Increased amplitude for more visible distortion
-                const waveIntensity = Math.max(0, 1 - Math.abs(bandPosition - 0.5) * 2); // Peak at center of band
+                // Update animation time for wave movement
+                animationTime += deltaTime;
                 
-                // Get image dimensions for wave calculations
-                const imgWidth = img.offsetWidth || item.offsetWidth;
-                const imgHeight = img.offsetHeight || item.offsetHeight;
+                // Apply real canvas-based water warp distortion
+                const warpIntensity = HOVER_CONFIG.crtWarpIntensity * (1 - progress * 0.3); // Slight fade as band moves
+                applyWarpToCanvas(warpCanvas, bandY, warpBandHeightNum, warpIntensity, animationTime);
                 
-                // Create a wave distortion using clip-path polygon
-                // This creates a real warp effect by distorting the image shape
-                const numPoints = 30; // Number of points for smooth wave
-                const wavePoints = [];
+                // Apply zoom transform to canvas (matching the image zoom)
+                const baseTransform = img.dataset.originalTransform || 'none';
+                const zoomTransform = baseTransform !== 'none' 
+                    ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
+                    : `scale(${HOVER_CONFIG.zoomScale})`;
+                warpCanvas.style.setProperty('transform', zoomTransform, 'important');
                 
-                // Top edge of distortion (above band)
-                const topY = Math.max(0, bandY - warpBandHeightNum * 0.5);
-                // Bottom edge of distortion (below band)
-                const bottomY = Math.min(itemHeight, bandY + warpBandHeightNum * 0.5);
-                
-                // Build wave polygon points - create a wavy distortion
-                for (let i = 0; i <= numPoints; i++) {
-                    const xPercent = (i / numPoints) * 100;
-                    const x = (i / numPoints) * imgWidth;
-                    
-                    // Calculate wave offset at this X position
-                    const wavePhase = (x / imgWidth) * Math.PI * 2 * waveFrequency;
-                    const waveOffset = Math.sin(wavePhase + progress * Math.PI * 4) * waveAmplitude * waveIntensity;
-                    
-                    // Top point (with wave distortion)
-                    const topWaveY = topY + waveOffset * 0.4;
-                    wavePoints.push(`${xPercent}% ${(topWaveY / itemHeight) * 100}%`);
-                    
-                    // Bottom point (with wave distortion)
-                    const bottomWaveY = bottomY + waveOffset * 0.4;
-                    wavePoints.push(`${xPercent}% ${(bottomWaveY / itemHeight) * 100}%`);
-                }
-                
-                // Apply clip-path wave distortion - this actually warps the image
-                const clipPath = `polygon(${wavePoints.join(', ')})`;
-                img.style.setProperty('clip-path', clipPath, 'important');
-                
-                // Apply vertical scaling distortion (stretches/compresses vertically like a shader)
-                const scaleYVariation = 1 + Math.sin(progress * Math.PI * 4) * 0.2 * waveIntensity;
-                const scaleY = 1 + (scaleYVariation - 1) * waveIntensity;
-                
-                // Apply horizontal displacement following the wave
-                const waveAmount = Math.sin(progress * Math.PI * waveFrequency) * waveAmplitude * waveIntensity;
-                
-                // Combine all transforms: zoom + wave distortion + vertical scaling
-                img.style.setProperty('transform', 
-                    `${zoomTransform} translateX(${waveAmount}px) scaleY(${scaleY})`, 
-                    'important'
-                );
-                
-                // Add chromatic aberration that follows the wave - more pronounced
-                const chromaOffset = Math.abs(waveAmount) * 0.8 + HOVER_CONFIG.crtChromaticAberration * waveIntensity;
-                img.style.setProperty('filter', `
+                // Apply CRT filters to canvas
+                warpCanvas.style.setProperty('filter', `
                     brightness(${HOVER_CONFIG.crtBrightness}) 
                     contrast(${HOVER_CONFIG.crtContrast}) 
                     saturate(${HOVER_CONFIG.crtSaturation})
-                    drop-shadow(${chromaOffset}px 0 0 rgba(255, 0, 0, 0.3))
-                    drop-shadow(-${chromaOffset}px 0 0 rgba(0, 255, 255, 0.3))
                 `, 'important');
-            }, 16);
+                
+                requestAnimationFrame(animateWarp);
+            }
+            
+            // Start animation loop
+            requestAnimationFrame(animateWarp);
+            
+            // Keep old interval for cleanup reference (but it won't be used)
+            waveInterval = setInterval(() => {
+                if (!isActive) {
+                    clearInterval(waveInterval);
+                    return;
+                }
+                
+                // This interval is now just for cleanup tracking
+                // Actual animation is handled by requestAnimationFrame above
+            }, 1000);
         }
         
         // Start the first cycle
@@ -258,7 +386,10 @@ const HOVER_CONFIG = {
             warpBandOverlay.style.opacity = '0';
             warpBandOverlay.style.transform = 'translateY(100%)';
             warpBandOverlay.style.transition = 'none';
-            if (img && img.dataset.glitchInterval) {
+            
+            // Restore original image and remove canvas
+            if (img) {
+                img.style.opacity = '1';
                 const baseTransform = img.dataset.originalTransform || 'none';
                 const zoomTransform = baseTransform !== 'none' 
                     ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
@@ -269,7 +400,14 @@ const HOVER_CONFIG = {
                     saturate(${HOVER_CONFIG.crtSaturation})
                 `, 'important');
                 img.style.setProperty('transform', zoomTransform, 'important');
-                img.style.setProperty('clip-path', 'none', 'important');
+                
+                // Remove canvas
+                if (img.dataset.warpCanvas) {
+                    const canvas = img.dataset.warpCanvas;
+                    canvas.remove();
+                    delete img.dataset.warpCanvas;
+                    delete canvas.dataset.originalImageData;
+                }
             }
         };
     }
