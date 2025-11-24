@@ -50,25 +50,26 @@ const HOVER_CONFIG = {
     zoomEasing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Smooth ease-in-out curve
     
     // Pulsating border
-    borderPulsateDuration: 2000, // Duration of border pulsate cycle (milliseconds)
-    borderPulsateIntensity: 0.3,  // Border opacity pulsate intensity (0-1)
-    borderWidth: '2px',         // Border width
-    borderColor: 'rgba(255, 255, 255, 0.8)', // Border color
+    borderPulsateDuration: 1000, // Duration of border pulsate cycle (milliseconds)
+    borderPulsateIntensity: 0.5,  // Border opacity pulsate intensity (0-1)
+    borderWidth: '4px',         // Border width
+    borderColor: 'rgba(53, 196, 240, 0.8)', // Border color
     
     // CRT Shader effects (applied to image, not overlays)
     crtScanlineOpacity: 0.12,  // Opacity of scanlines (0-1)
     crtScanlineHeight: '1px',  // Height of each scanline
     crtScanlineGap: '2px',     // Gap between scanlines
-    crtGlitchIntensity: 2,      // Horizontal glitch displacement in pixels
+    crtGlitchIntensity: 15,      // Horizontal glitch displacement in pixels
     crtGlitchSpeed: 150,         // Glitch animation speed (milliseconds per frame)
-    crtChromaticAberration: 1.5, // Chromatic aberration offset in pixels
+    crtChromaticAberration: 5, // Chromatic aberration offset in pixels
     crtBrightness: 1.1,         // Slight brightness increase
     crtContrast: 1.05,         // Slight contrast increase
     crtSaturation: 1.1,         // Slight saturation increase
-    crtWarpBandHeight: '25px',   // Height of warping band
+    crtWarpBandHeight: '150px',   // Height of warping band
     crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
     crtWarpBandChance: 0.3,      // Chance of warp band appearing (0-1, 0.3 = 30%)
-    crtWarpIntensity: 3          // Intensity of warp distortion in pixels
+    crtWarpIntensity: 15,        // Intensity of warp distortion in pixels (horizontal displacement)
+    crtWarpBandOpacity: 0.6      // Opacity of the warp band overlay (0-1)
 };
 
 (function() {
@@ -458,19 +459,19 @@ const HOVER_CONFIG = {
             height: ${HOVER_CONFIG.crtWarpBandHeight};
             background: linear-gradient(
                 to bottom,
-                rgba(255, 255, 255, 0.15) 0%,
-                rgba(255, 255, 255, 0.4) 50%,
-                rgba(255, 255, 255, 0.15) 100%
+                rgba(255, 255, 255, ${HOVER_CONFIG.crtWarpBandOpacity * 0.3}) 0%,
+                rgba(255, 255, 255, ${HOVER_CONFIG.crtWarpBandOpacity * 0.8}) 50%,
+                rgba(255, 255, 255, ${HOVER_CONFIG.crtWarpBandOpacity * 0.3}) 100%
             );
             pointer-events: none;
             z-index: 6;
             opacity: 0;
             transform: translateY(100%);
             transition: transform ${HOVER_CONFIG.crtWarpBandSpeed}ms linear, opacity 150ms ease-in;
-            filter: blur(1px);
+            filter: blur(2px);
             box-shadow: 
-                0 0 ${HOVER_CONFIG.crtWarpIntensity * 2}px rgba(255, 255, 255, 0.4),
-                inset 0 0 ${HOVER_CONFIG.crtWarpIntensity * 3}px rgba(255, 255, 255, 0.3);
+                0 0 ${HOVER_CONFIG.crtWarpIntensity * 1.5}px rgba(255, 255, 255, ${HOVER_CONFIG.crtWarpBandOpacity}),
+                inset 0 0 ${HOVER_CONFIG.crtWarpIntensity * 2}px rgba(255, 255, 255, ${HOVER_CONFIG.crtWarpBandOpacity * 0.7});
         `;
         
         overlay.appendChild(gradientBox);
