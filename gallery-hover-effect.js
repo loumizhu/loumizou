@@ -53,7 +53,7 @@ const HOVER_CONFIG = {
     borderPulsateDuration: 2000, // Duration of border pulsate cycle (milliseconds)
     borderPulsateIntensity: 0.3,  // Border opacity pulsate intensity (0-1)
     borderWidth: '2px',         // Border width
-    borderColor: 'rgba(255, 255, 255, 0.8)' // Border color
+    borderColor: 'rgba(255, 255, 255, 0.8)', // Border color
     
     // CRT Shader effects (applied to image, not overlays)
     crtScanlineOpacity: 0.12,  // Opacity of scanlines (0-1)
