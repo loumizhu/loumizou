@@ -82,6 +82,88 @@ const HOVER_CONFIG = {
     }
     
     /**
+     * Start warp band animation (TV startup effect)
+     */
+    function startWarpBandAnimation(warpBandOverlay, item) {
+        if (!warpBandOverlay) return;
+        
+        // Random chance to trigger warp band
+        if (Math.random() > HOVER_CONFIG.crtWarpBandChance) {
+            return;
+        }
+        
+        // Random delay before starting (0-500ms)
+        const startDelay = Math.random() * 500;
+        
+        const warpTimeout = setTimeout(() => {
+            const itemHeight = item.offsetHeight;
+            
+            // Show and animate warp band from bottom to top
+            warpBandOverlay.style.opacity = '1';
+            warpBandOverlay.style.transform = `translateY(-${itemHeight + parseFloat(HOVER_CONFIG.crtWarpBandHeight)}px)`;
+            
+            // Apply warping effect to image during band pass
+            const img = item.querySelector('img');
+            if (img) {
+                // Create warping effect using filter with distortion
+                const warpAmount = HOVER_CONFIG.crtWarpIntensity;
+                
+                // Apply wave distortion and chromatic aberration
+                const baseTransform = img.dataset.originalTransform || 'none';
+                const zoomTransform = baseTransform !== 'none' 
+                    ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
+                    : `scale(${HOVER_CONFIG.zoomScale})`;
+                
+                // Add wave distortion using filter
+                img.style.setProperty('filter', `
+                    brightness(${HOVER_CONFIG.crtBrightness}) 
+                    contrast(${HOVER_CONFIG.crtContrast}) 
+                    saturate(${HOVER_CONFIG.crtSaturation})
+                    drop-shadow(${warpAmount}px 0 0 rgba(255, 255, 255, 0.3))
+                    drop-shadow(-${warpAmount}px 0 0 rgba(255, 255, 255, 0.3))
+                `, 'important');
+                
+                // Apply subtle horizontal wave distortion using transform
+                const waveAmount = Math.sin(Date.now() / 100) * warpAmount * 0.5;
+                img.style.setProperty('transform', `${zoomTransform} translateX(${waveAmount}px)`, 'important');
+                
+                // Animate the wave during the band pass
+                let waveFrame = 0;
+                const waveInterval = setInterval(() => {
+                    waveFrame++;
+                    const progress = waveFrame / (HOVER_CONFIG.crtWarpBandSpeed / 16); // ~60fps
+                    if (progress > 1) {
+                        clearInterval(waveInterval);
+                        return;
+                    }
+                    
+                    // Create wave effect that follows the band
+                    const bandY = itemHeight * (1 - progress);
+                    const waveAmount = Math.sin(progress * Math.PI * 4) * warpAmount * (1 - progress);
+                    img.style.setProperty('transform', `${zoomTransform} translateX(${waveAmount}px)`, 'important');
+                }, 16);
+                
+                // Reset after animation completes
+                setTimeout(() => {
+                    clearInterval(waveInterval);
+                    if (img.dataset.glitchInterval) {
+                        img.style.setProperty('filter', `
+                            brightness(${HOVER_CONFIG.crtBrightness}) 
+                            contrast(${HOVER_CONFIG.crtContrast}) 
+                            saturate(${HOVER_CONFIG.crtSaturation})
+                        `, 'important');
+                        img.style.setProperty('transform', zoomTransform, 'important');
+                    }
+                    warpBandOverlay.style.opacity = '0';
+                    warpBandOverlay.style.transform = 'translateY(100%)';
+                }, HOVER_CONFIG.crtWarpBandSpeed);
+            }
+        }, startDelay);
+        
+        warpBandOverlay.dataset.warpTimeout = warpTimeout.toString();
+    }
+    
+    /**
      * Start glitch effect on image
      */
     function startGlitchEffect(img) {
