@@ -89,7 +89,7 @@ const HOVER_CONFIG = {
     }
     
     /**
-     * Start warp band animation (TV startup effect)
+     * Start warp band animation (TV startup effect) - loops continuously while hovering
      */
     function startWarpBandAnimation(warpBandOverlay, item) {
         if (!warpBandOverlay) return;
@@ -99,65 +99,57 @@ const HOVER_CONFIG = {
             return;
         }
         
-        // Random delay before starting (0-500ms)
-        const startDelay = Math.random() * 500;
+        const itemHeight = item.offsetHeight;
+        const warpBandHeightNum = parseFloat(HOVER_CONFIG.crtWarpBandHeight);
+        const img = item.querySelector('img');
         
-        const warpTimeout = setTimeout(() => {
-            const itemHeight = item.offsetHeight;
+        if (!img) return;
+        
+        // Store references for cleanup
+        let waveInterval = null;
+        let isActive = true;
+        
+        // Function to run one warp band cycle
+        function runWarpCycle() {
+            if (!isActive) return;
+            
+            // Reset position first
+            warpBandOverlay.style.transition = 'none';
+            warpBandOverlay.style.transform = 'translateY(100%)';
+            warpBandOverlay.style.opacity = '0';
+            
+            // Force reflow
+            warpBandOverlay.offsetHeight;
             
             // Show and animate warp band from bottom to top
+            warpBandOverlay.style.transition = `transform ${HOVER_CONFIG.crtWarpBandSpeed}ms linear, opacity 150ms ease-in`;
             warpBandOverlay.style.opacity = '1';
-            warpBandOverlay.style.transform = `translateY(-${itemHeight + parseFloat(HOVER_CONFIG.crtWarpBandHeight)}px)`;
+            requestAnimationFrame(() => {
+                if (!isActive) return;
+                warpBandOverlay.style.transform = `translateY(-${itemHeight + warpBandHeightNum}px)`;
+            });
             
             // Apply warping effect to image during band pass
-            const img = item.querySelector('img');
-            if (img) {
-                // Create warping effect using filter with distortion
-                const warpAmount = HOVER_CONFIG.crtWarpIntensity;
-                
-                // Apply wave distortion and chromatic aberration
-                const baseTransform = img.dataset.originalTransform || 'none';
-                const zoomTransform = baseTransform !== 'none' 
-                    ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
-                    : `scale(${HOVER_CONFIG.zoomScale})`;
-                
-                // Store original filter for restoration
-                const originalFilter = img.style.filter || '';
-                
-                // Animate the wave during the band pass - create a more visible distortion
-                let waveFrame = 0;
-                const totalFrames = Math.ceil(HOVER_CONFIG.crtWarpBandSpeed / 16); // ~60fps
-                const waveInterval = setInterval(() => {
-                    waveFrame++;
-                    const progress = waveFrame / totalFrames;
-                    if (progress > 1) {
-                        clearInterval(waveInterval);
-                        return;
-                    }
-                    
-                    // Create wave effect that follows the band - more intense distortion
-                    // Use a sine wave that creates a visible horizontal displacement
-                    const waveFrequency = 8; // Number of waves across the band
-                    const waveAmplitude = warpAmount * (1 - progress * 0.7); // Fade out as band moves
-                    const waveAmount = Math.sin(progress * Math.PI * waveFrequency) * waveAmplitude;
-                    
-                    // Apply horizontal displacement
-                    img.style.setProperty('transform', `${zoomTransform} translateX(${waveAmount}px)`, 'important');
-                    
-                    // Add chromatic aberration that follows the wave
-                    const chromaOffset = Math.abs(waveAmount) * 0.3 + HOVER_CONFIG.crtChromaticAberration;
-                    img.style.setProperty('filter', `
-                        brightness(${HOVER_CONFIG.crtBrightness}) 
-                        contrast(${HOVER_CONFIG.crtContrast}) 
-                        saturate(${HOVER_CONFIG.crtSaturation})
-                        drop-shadow(${chromaOffset}px 0 0 rgba(255, 0, 0, 0.4))
-                        drop-shadow(-${chromaOffset}px 0 0 rgba(0, 255, 255, 0.4))
-                    `, 'important');
-                }, 16);
-                
-                // Reset after animation completes
-                setTimeout(() => {
+            const warpAmount = HOVER_CONFIG.crtWarpIntensity;
+            const baseTransform = img.dataset.originalTransform || 'none';
+            const zoomTransform = baseTransform !== 'none' 
+                ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
+                : `scale(${HOVER_CONFIG.zoomScale})`;
+            
+            // Animate the wave during the band pass - create a more visible distortion
+            let waveFrame = 0;
+            const totalFrames = Math.ceil(HOVER_CONFIG.crtWarpBandSpeed / 16); // ~60fps
+            waveInterval = setInterval(() => {
+                if (!isActive) {
                     clearInterval(waveInterval);
+                    return;
+                }
+                
+                waveFrame++;
+                const progress = waveFrame / totalFrames;
+                if (progress > 1) {
+                    clearInterval(waveInterval);
+                    // Restore base filters at end of cycle
                     if (img.dataset.glitchInterval) {
                         img.style.setProperty('filter', `
                             brightness(${HOVER_CONFIG.crtBrightness}) 
@@ -166,13 +158,67 @@ const HOVER_CONFIG = {
                         `, 'important');
                         img.style.setProperty('transform', zoomTransform, 'important');
                     }
+                    // Reset band position and start next cycle
                     warpBandOverlay.style.opacity = '0';
                     warpBandOverlay.style.transform = 'translateY(100%)';
-                }, HOVER_CONFIG.crtWarpBandSpeed);
-            }
-        }, startDelay);
+                    
+                    // Start next cycle after a short delay
+                    if (isActive) {
+                        setTimeout(() => {
+                            if (isActive) {
+                                runWarpCycle();
+                            }
+                        }, 100); // Small gap between cycles
+                    }
+                    return;
+                }
+                
+                // Create wave effect that follows the band - more intense distortion
+                const waveFrequency = 8; // Number of waves across the band
+                const waveAmplitude = warpAmount * (1 - progress * 0.5); // Less fade for more pronounced effect
+                const waveAmount = Math.sin(progress * Math.PI * waveFrequency) * waveAmplitude;
+                
+                // Apply horizontal displacement
+                img.style.setProperty('transform', `${zoomTransform} translateX(${waveAmount}px)`, 'important');
+                
+                // Add chromatic aberration that follows the wave - more pronounced
+                const chromaOffset = Math.abs(waveAmount) * 0.5 + HOVER_CONFIG.crtChromaticAberration;
+                img.style.setProperty('filter', `
+                    brightness(${HOVER_CONFIG.crtBrightness}) 
+                    contrast(${HOVER_CONFIG.crtContrast}) 
+                    saturate(${HOVER_CONFIG.crtSaturation})
+                    drop-shadow(${chromaOffset}px 0 0 rgba(255, 0, 0, 0.6))
+                    drop-shadow(-${chromaOffset}px 0 0 rgba(0, 255, 255, 0.6))
+                `, 'important');
+            }, 16);
+        }
         
-        warpBandOverlay.dataset.warpTimeout = warpTimeout.toString();
+        // Start the first cycle
+        runWarpCycle();
+        
+        // Store cleanup function
+        warpBandOverlay.dataset.warpActive = 'true';
+        warpBandOverlay.dataset.warpCleanup = () => {
+            isActive = false;
+            if (waveInterval) {
+                clearInterval(waveInterval);
+            }
+            warpBandOverlay.style.opacity = '0';
+            warpBandOverlay.style.transform = 'translateY(100%)';
+            warpBandOverlay.style.transition = 'none';
+            if (img && img.dataset.glitchInterval) {
+                const baseTransform = img.dataset.originalTransform || 'none';
+                const zoomTransform = baseTransform !== 'none' 
+                    ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
+                    : `scale(${HOVER_CONFIG.zoomScale})`;
+                img.style.setProperty('filter', `
+                    brightness(${HOVER_CONFIG.crtBrightness}) 
+                    contrast(${HOVER_CONFIG.crtContrast}) 
+                    saturate(${HOVER_CONFIG.crtSaturation})
+                `, 'important');
+                img.style.setProperty('transform', zoomTransform, 'important');
+            }
+        };
     }
     
     /**
