@@ -67,9 +67,9 @@ const HOVER_CONFIG = {
     crtSaturation: 1.1,         // Slight saturation increase
     crtWarpBandHeight: '150px',   // Height of warping band
     crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
-    crtWarpBandChance: 0.3,      // Chance of warp band appearing (0-1, 0.3 = 30%)
-    crtWarpIntensity: 15,        // Intensity of warp distortion in pixels (horizontal displacement)
-    crtWarpBandOpacity: 0.6      // Opacity of the warp band overlay (0-1)
+    crtWarpBandChance: 1.0,      // Chance of warp band appearing (0-1, 1.0 = always on hover)
+    crtWarpIntensity: 25,        // Intensity of warp distortion in pixels (horizontal displacement) - increased
+    crtWarpBandOpacity: 0.8      // Opacity of the warp band overlay (0-1) - increased
 };
 
 (function() {
@@ -774,9 +774,10 @@ const HOVER_CONFIG = {
             }
             
             // Stop warp band animation
-            if (warpBandOverlay && warpBandOverlay.dataset.warpTimeout) {
-                clearTimeout(parseInt(warpBandOverlay.dataset.warpTimeout));
-                delete warpBandOverlay.dataset.warpTimeout;
+            if (warpBandOverlay && warpBandOverlay.dataset.warpCleanup) {
+                warpBandOverlay.dataset.warpCleanup();
+                delete warpBandOverlay.dataset.warpActive;
+                delete warpBandOverlay.dataset.warpCleanup;
             }
             
             // Reset zoom and filters on image
