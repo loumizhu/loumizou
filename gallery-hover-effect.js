@@ -68,7 +68,7 @@ const HOVER_CONFIG = {
     crtWarpBandHeight: '150px',   // Height of warping band
     crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
     crtWarpBandChance: 0.4,      // Chance of warp band appearing (0-1, 1.0 = always on hover)
-    crtWarpIntensity: 2,        // Intensity of warp distortion in pixels (horizontal displacement) - increased
+    crtWarpIntensity: 8,        // Intensity of warp distortion in pixels (horizontal displacement) - increased for real warp effect
     crtWarpBandOpacity: 0.8      // Opacity of the warp band overlay (0-1) - increased
 };
 
@@ -149,7 +149,7 @@ const HOVER_CONFIG = {
                 const progress = waveFrame / totalFrames;
                 if (progress > 1) {
                     clearInterval(waveInterval);
-                    // Restore base filters at end of cycle
+                    // Restore base filters and remove clip-path at end of cycle
                     if (img.dataset.glitchInterval) {
                         img.style.setProperty('filter', `
                             brightness(${HOVER_CONFIG.crtBrightness}) 
@@ -157,6 +157,7 @@ const HOVER_CONFIG = {
                             saturate(${HOVER_CONFIG.crtSaturation})
                         `, 'important');
                         img.style.setProperty('transform', zoomTransform, 'important');
+                        img.style.setProperty('clip-path', 'none', 'important');
                     }
                     // Reset band position and start next cycle
                     warpBandOverlay.style.opacity = '0';
@@ -173,22 +174,72 @@ const HOVER_CONFIG = {
                     return;
                 }
                 
-                // Create wave effect that follows the band - more intense distortion
-                const waveFrequency = 8; // Number of waves across the band
-                const waveAmplitude = warpAmount * (1 - progress * 0.5); // Less fade for more pronounced effect
-                const waveAmount = Math.sin(progress * Math.PI * waveFrequency) * waveAmplitude;
+                // Calculate warp band position (0 = bottom, 1 = top)
+                const bandPosition = 1 - progress; // Invert so 0 is bottom, 1 is top
+                const bandY = bandPosition * itemHeight;
                 
-                // Apply horizontal displacement
-                img.style.setProperty('transform', `${zoomTransform} translateX(${waveAmount}px)`, 'important');
+                // Create real shader-like wave distortion that follows the band
+                const waveFrequency = 12; // Number of waves across the width
+                const waveAmplitude = warpAmount * 2; // Increased amplitude for more visible distortion
+                const waveIntensity = Math.max(0, 1 - Math.abs(bandPosition - 0.5) * 2); // Peak at center of band
+                
+                // Get image dimensions for wave calculations
+                const imgWidth = img.offsetWidth || item.offsetWidth;
+                const imgHeight = img.offsetHeight || item.offsetHeight;
+                
+                // Create a wave distortion using clip-path polygon
+                // This creates a real warp effect by distorting the image shape
+                const numPoints = 30; // Number of points for smooth wave
+                const wavePoints = [];
+                
+                // Top edge of distortion (above band)
+                const topY = Math.max(0, bandY - warpBandHeightNum * 0.5);
+                // Bottom edge of distortion (below band)
+                const bottomY = Math.min(itemHeight, bandY + warpBandHeightNum * 0.5);
+                
+                // Build wave polygon points - create a wavy distortion
+                for (let i = 0; i <= numPoints; i++) {
+                    const xPercent = (i / numPoints) * 100;
+                    const x = (i / numPoints) * imgWidth;
+                    
+                    // Calculate wave offset at this X position
+                    const wavePhase = (x / imgWidth) * Math.PI * 2 * waveFrequency;
+                    const waveOffset = Math.sin(wavePhase + progress * Math.PI * 4) * waveAmplitude * waveIntensity;
+                    
+                    // Top point (with wave distortion)
+                    const topWaveY = topY + waveOffset * 0.4;
+                    wavePoints.push(`${xPercent}% ${(topWaveY / itemHeight) * 100}%`);
+                    
+                    // Bottom point (with wave distortion)
+                    const bottomWaveY = bottomY + waveOffset * 0.4;
+                    wavePoints.push(`${xPercent}% ${(bottomWaveY / itemHeight) * 100}%`);
+                }
+                
+                // Apply clip-path wave distortion - this actually warps the image
+                const clipPath = `polygon(${wavePoints.join(', ')})`;
+                img.style.setProperty('clip-path', clipPath, 'important');
+                
+                // Apply vertical scaling distortion (stretches/compresses vertically like a shader)
+                const scaleYVariation = 1 + Math.sin(progress * Math.PI * 4) * 0.2 * waveIntensity;
+                const scaleY = 1 + (scaleYVariation - 1) * waveIntensity;
+                
+                // Apply horizontal displacement following the wave
+                const waveAmount = Math.sin(progress * Math.PI * waveFrequency) * waveAmplitude * waveIntensity;
+                
+                // Combine all transforms: zoom + wave distortion + vertical scaling
+                img.style.setProperty('transform', 
+                    `${zoomTransform} translateX(${waveAmount}px) scaleY(${scaleY})`, 
+                    'important'
+                );
                 
                 // Add chromatic aberration that follows the wave - more pronounced
-                const chromaOffset = Math.abs(waveAmount) * 0.5 + HOVER_CONFIG.crtChromaticAberration;
+                const chromaOffset = Math.abs(waveAmount) * 0.8 + HOVER_CONFIG.crtChromaticAberration * waveIntensity;
                 img.style.setProperty('filter', `
                     brightness(${HOVER_CONFIG.crtBrightness}) 
                     contrast(${HOVER_CONFIG.crtContrast}) 
                     saturate(${HOVER_CONFIG.crtSaturation})
-                    drop-shadow(${chromaOffset}px 0 0 rgba(255, 0, 0, 0.6))
-                    drop-shadow(-${chromaOffset}px 0 0 rgba(0, 255, 255, 0.6))
+                    drop-shadow(${chromaOffset}px 0 0 rgba(255, 0, 0, 0.3))
+                    drop-shadow(-${chromaOffset}px 0 0 rgba(0, 255, 255, 0.3))
                 `, 'important');
             }, 16);
         }
@@ -218,6 +269,7 @@ const HOVER_CONFIG = {
                     saturate(${HOVER_CONFIG.crtSaturation})
                 `, 'important');
                 img.style.setProperty('transform', zoomTransform, 'important');
+                img.style.setProperty('clip-path', 'none', 'important');
             }
         };
     }
