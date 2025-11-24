@@ -67,7 +67,7 @@ const HOVER_CONFIG = {
     crtSaturation: 1.1,         // Slight saturation increase
     crtWarpBandHeight: '150px',   // Height of warping band
     crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
-    crtWarpBandChance: 0.7,      // Chance of warp band appearing (0-1, 1.0 = always on hover)
+    crtWarpBandChance: 0.4,      // Chance of warp band appearing (0-1, 1.0 = always on hover)
     crtWarpIntensity: 2,        // Intensity of warp distortion in pixels (horizontal displacement) - increased
     crtWarpBandOpacity: 0.8      // Opacity of the warp band overlay (0-1) - increased
 };
