@@ -287,7 +287,21 @@ const HOVER_CONFIG = {
     }
     
     /**
-     * Get dominant color from image
+     * Calculate luminance (brightness) of a color
+     * Returns a value between 0 (darkest) and 1 (brightest)
+     */
+    function getLuminance(r, g, b) {
+        // Using relative luminance formula from WCAG
+        const [rs, gs, bs] = [r, g, b].map(c => {
+            c = c / 255;
+            return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+        });
+        return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+    }
+    
+    /**
+     * Get darkest color from image palette
+     * Samples the entire image to build a color palette, then returns the darkest color
      */
     function getImageColor(img, callback) {
         const canvas = document.createElement('canvas');
@@ -299,29 +313,63 @@ const HOVER_CONFIG = {
         try {
             ctx.drawImage(img, 0, 0);
             
-            // Sample color from specified position
-            const x = Math.floor(canvas.width * HOVER_CONFIG.colorSamplePosition.x);
-            const y = Math.floor(canvas.height * HOVER_CONFIG.colorSamplePosition.y);
-            const size = HOVER_CONFIG.colorSampleSize;
+            // Sample the entire image at regular intervals to build a palette
+            // Use a step size to sample efficiently without processing every pixel
+            const stepSize = Math.max(1, Math.floor(Math.min(canvas.width, canvas.height) / 50)); // Sample ~50x50 points
             
-            const imageData = ctx.getImageData(x, y, size, size);
-            const data = imageData.data;
+            const colorPalette = [];
+            const colorMap = new Map(); // To count color frequencies
             
-            // Calculate average color
-            let r = 0, g = 0, b = 0, count = 0;
-            for (let i = 0; i < data.length; i += 4) {
-                r += data[i];
-                g += data[i + 1];
-                b += data[i + 2];
-                count++;
+            // Sample pixels across the entire image
+            for (let y = 0; y < canvas.height; y += stepSize) {
+                for (let x = 0; x < canvas.width; x += stepSize) {
+                    const imageData = ctx.getImageData(x, y, 1, 1);
+                    const data = imageData.data;
+                    const r = data[0];
+                    const g = data[1];
+                    const b = data[2];
+                    const a = data[3];
+                    
+                    // Skip fully transparent pixels
+                    if (a < 128) continue;
+                    
+                    // Create a color key for grouping similar colors
+                    // Round to nearest 10 to group similar colors together
+                    const colorKey = `${Math.floor(r / 10) * 10},${Math.floor(g / 10) * 10},${Math.floor(b / 10) * 10}`;
+                    
+                    if (!colorMap.has(colorKey)) {
+                        colorMap.set(colorKey, { r, g, b, count: 1 });
+                    } else {
+                        const existing = colorMap.get(colorKey);
+                        // Average the colors in this group
+                        existing.r = Math.floor((existing.r * existing.count + r) / (existing.count + 1));
+                        existing.g = Math.floor((existing.g * existing.count + g) / (existing.count + 1));
+                        existing.b = Math.floor((existing.b * existing.count + b) / (existing.count + 1));
+                        existing.count++;
+                    }
+                }
             }
             
-            r = Math.floor(r / count);
-            g = Math.floor(g / count);
-            b = Math.floor(b / count);
+            // Convert map to array and find the darkest color
+            let darkestColor = null;
+            let darkestLuminance = 1; // Start with brightest possible
             
-            callback(`rgb(${r}, ${g}, ${b})`);
+            colorMap.forEach((color) => {
+                const luminance = getLuminance(color.r, color.g, color.b);
+                if (luminance < darkestLuminance) {
+                    darkestLuminance = luminance;
+                    darkestColor = color;
+                }
+            });
+            
+            if (darkestColor) {
+                callback(`rgb(${darkestColor.r}, ${darkestColor.g}, ${darkestColor.b})`);
+            } else {
+                // Fallback if no colors found
+                callback(HOVER_CONFIG.nameBackgroundColor);
+            }
         } catch (e) {
+            console.error('Error extracting image color:', e);
             // Fallback to default color if extraction fails
             callback(HOVER_CONFIG.nameBackgroundColor);
         }
