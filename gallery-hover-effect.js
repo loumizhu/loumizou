@@ -121,33 +121,38 @@ const HOVER_CONFIG = {
                     ? `scale(${HOVER_CONFIG.zoomScale}) ${baseTransform}`
                     : `scale(${HOVER_CONFIG.zoomScale})`;
                 
-                // Add wave distortion using filter
-                img.style.setProperty('filter', `
-                    brightness(${HOVER_CONFIG.crtBrightness}) 
-                    contrast(${HOVER_CONFIG.crtContrast}) 
-                    saturate(${HOVER_CONFIG.crtSaturation})
-                    drop-shadow(${warpAmount}px 0 0 rgba(255, 255, 255, 0.3))
-                    drop-shadow(-${warpAmount}px 0 0 rgba(255, 255, 255, 0.3))
-                `, 'important');
+                // Store original filter for restoration
+                const originalFilter = img.style.filter || '';
                 
-                // Apply subtle horizontal wave distortion using transform
-                const waveAmount = Math.sin(Date.now() / 100) * warpAmount * 0.5;
-                img.style.setProperty('transform', `${zoomTransform} translateX(${waveAmount}px)`, 'important');
-                
-                // Animate the wave during the band pass
+                // Animate the wave during the band pass - create a more visible distortion
                 let waveFrame = 0;
+                const totalFrames = Math.ceil(HOVER_CONFIG.crtWarpBandSpeed / 16); // ~60fps
                 const waveInterval = setInterval(() => {
                     waveFrame++;
-                    const progress = waveFrame / (HOVER_CONFIG.crtWarpBandSpeed / 16); // ~60fps
+                    const progress = waveFrame / totalFrames;
                     if (progress > 1) {
                         clearInterval(waveInterval);
                         return;
                     }
                     
-                    // Create wave effect that follows the band
-                    const bandY = itemHeight * (1 - progress);
-                    const waveAmount = Math.sin(progress * Math.PI * 4) * warpAmount * (1 - progress);
+                    // Create wave effect that follows the band - more intense distortion
+                    // Use a sine wave that creates a visible horizontal displacement
+                    const waveFrequency = 8; // Number of waves across the band
+                    const waveAmplitude = warpAmount * (1 - progress * 0.7); // Fade out as band moves
+                    const waveAmount = Math.sin(progress * Math.PI * waveFrequency) * waveAmplitude;
+                    
+                    // Apply horizontal displacement
                     img.style.setProperty('transform', `${zoomTransform} translateX(${waveAmount}px)`, 'important');
+                    
+                    // Add chromatic aberration that follows the wave
+                    const chromaOffset = Math.abs(waveAmount) * 0.3 + HOVER_CONFIG.crtChromaticAberration;
+                    img.style.setProperty('filter', `
+                        brightness(${HOVER_CONFIG.crtBrightness}) 
+                        contrast(${HOVER_CONFIG.crtContrast}) 
+                        saturate(${HOVER_CONFIG.crtSaturation})
+                        drop-shadow(${chromaOffset}px 0 0 rgba(255, 0, 0, 0.4))
+                        drop-shadow(-${chromaOffset}px 0 0 rgba(0, 255, 255, 0.4))
+                    `, 'important');
                 }, 16);
                 
                 // Reset after animation completes
