@@ -548,22 +548,26 @@ const HOVER_CONFIG = {
             img.style.transformOrigin = 'center center';
             img.style.willChange = 'transform'; // Optimize for transform animations
             
-            // Create pulsating border element
+            // Get image border-radius to match it
+            const computedImgStyle = window.getComputedStyle(img);
+            const imgBorderRadius = computedImgStyle.borderRadius || '0px';
+            
+            // Create pulsating border element on the image itself
             const pulsatingBorder = document.createElement('div');
             pulsatingBorder.className = 'gallery-pulsating-border';
             pulsatingBorder.style.cssText = `
                 position: absolute;
                 top: 0;
                 left: 0;
-                right: 0;
-                bottom: 0;
+                width: 100%;
+                height: 100%;
                 border: ${HOVER_CONFIG.borderWidth} solid ${HOVER_CONFIG.borderColor};
-                border-radius: 0;
+                border-radius: ${imgBorderRadius};
                 pointer-events: none;
                 z-index: 11;
                 opacity: 0;
                 transition: opacity 200ms ease-in;
-                animation: borderPulsate ${HOVER_CONFIG.borderPulsateDuration}ms ease-in-out infinite;
+                box-sizing: border-box;
             `;
             
             // Add border pulsate keyframes if not already added
@@ -584,7 +588,19 @@ const HOVER_CONFIG = {
                 document.head.appendChild(style);
             }
             
-            item.appendChild(pulsatingBorder);
+            // Append border to image parent (the <a> tag) - this is the image container
+            const imgContainer = img.parentElement;
+            if (imgContainer) {
+                // Make container relative if not already
+                const containerStyle = window.getComputedStyle(imgContainer);
+                if (containerStyle.position === 'static') {
+                    imgContainer.style.position = 'relative';
+                }
+                imgContainer.appendChild(pulsatingBorder);
+            } else {
+                // Fallback: append to item
+                item.appendChild(pulsatingBorder);
+            }
             
             // Store original transform for later use
             if (hasOriginalTransform) {
@@ -606,19 +622,30 @@ const HOVER_CONFIG = {
             const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
             const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
-            const pulsatingBorder = item.querySelector('.gallery-pulsating-border');
             const img = item.querySelector('img');
+            
+            // Find pulsating border - it might be in image parent or item
+            let pulsatingBorder = null;
+            const imgParent = img ? img.parentElement : null;
+            if (imgParent && imgParent !== item) {
+                pulsatingBorder = imgParent.querySelector('.gallery-pulsating-border');
+            }
+            if (!pulsatingBorder) {
+                pulsatingBorder = item.querySelector('.gallery-pulsating-border');
+            }
             
             // Bring hovered item above other elements
             item.style.zIndex = '100';
+            item.style.position = 'relative';
             
             // Animate swipe lines and gradient box from top to bottom
             requestAnimationFrame(() => {
                 const itemHeight = item.offsetHeight;
                 
-                // Show pulsating border
+                // Show pulsating border with animation
                 if (pulsatingBorder) {
                     pulsatingBorder.style.opacity = '1';
+                    pulsatingBorder.style.animation = `borderPulsate ${HOVER_CONFIG.borderPulsateDuration}ms ease-in-out infinite`;
                 }
                 
                 // Zoom in the image and apply CRT effects
