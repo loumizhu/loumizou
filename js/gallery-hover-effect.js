@@ -8,68 +8,75 @@
 // ============================================
 const HOVER_CONFIG = {
     // Swipe line animation
-    swipeDuration: 300,        // Duration of swipe animation in milliseconds
-    swipeDelay: 150,           // Delay before second line starts (milliseconds)
+    swipeDuration: 660,        // Duration of swipe animation in milliseconds (Min: 0, Max: 5000; lower is faster)
+    swipeDelay: 30,           // Delay before second line starts in milliseconds (Min: 0, Max: 5000; lower is faster/earlier)
+    swipeOutDelay: 300,        // Delay between each swipe when animating out (bottom to top) in ms (Min: 0, Max: 5000; lower is faster)
     swipeEasing: 'cubic-bezier(0.4, 0, 0.2, 1)', // Ease in-out curve
-    swipeHeight: '4px',        // Height of swipe lines
-    swipeLineOpacity: 0.5,     // Opacity of white swipe lines (0-1)
+    swipeHeight: '4px',        // Height of swipe lines (e.g., '1px', '10px')
+    swipeLineOpacity: 0.5,     // Opacity of white swipe lines (Min: 0.0, Max: 1.0)
     
     // Blue gradient box
-    gradientBoxHeight: '200px', // Height of blue gradient box
-    gradientBoxFadeDuration: 800, // Duration of gradient fade out (milliseconds)
-    gradientBoxColor: 'rgba(59, 130, 246, 0.9)', // Blue gradient color (rgba) - increased opacity for visibility
-    gradientBoxFadeDelay: 300, // Delay before gradient starts fading (milliseconds) - increased delay
+    gradientBoxHeight: '200px', // Height of blue gradient box (e.g., '50px', '500px')
+    gradientBoxFadeDuration: 800, // Duration of gradient fade out in milliseconds (Min: 0, Max: 5000; lower is faster)
+    gradientBoxColor: 'rgba(59, 130, 246, 0.9)', // Blue gradient color (rgba format)
+    gradientBoxFadeDelay: 300, // Delay before gradient starts fading in milliseconds (Min: 0, Max: 5000; lower is earlier)
     
     // Image name reveal
-    nameRevealDuration: 400,   // Duration of text slide animation (milliseconds)
-    nameRevealDelay: 200,     // Delay before text starts animating (milliseconds)
-    nameBackgroundOpacity: 0.85, // Background opacity for name (0-1)
+    nameRevealDuration: 400,   // Duration of text slide animation in milliseconds (Min: 0, Max: 5000; lower is faster)
+    nameRevealDelay: 200,     // Delay before text starts animating in milliseconds (Min: 0, Max: 5000; lower is earlier)
+    nameBackgroundOpacity: 0.85, // Background opacity for name (Min: 0.0, Max: 1.0)
     namePadding: '8px 16px',   // Padding for name container
-    nameFontSize: '14px',      // Font size for name
-    nameColor: '#ffffff',      // Text color
-    nameBackgroundColor: 'rgba(10, 255, 83, 0.51)', // Fallback background color
-    namePulsateDuration: 2000, // Duration of pulsate animation cycle (milliseconds)
-    namePulsateIntensity: 0.15, // Pulsate intensity (0-1, how much opacity changes)
+    nameFontSize: '15px',      // Font size for name
+    nameColor: '#ffffff',      // Text color (hex or rgba)
+    nameBackgroundColor: 'rgba(107, 110, 108, 0.25)', // Fallback background color
+    namePulsateDuration: 2000, // Duration of pulsate animation cycle in milliseconds (Min: 100, Max: 10000; lower is faster)
+    namePulsateIntensity: 0.15, // Pulsate intensity, how much opacity changes (Min: 0.0, Max: 1.0)
     
     // Right-to-left swipe line (vertical line)
-    swipeLineRtlDuration: 500, // Duration of right-to-left line animation (milliseconds)
-    swipeLineRtlDelay: 0,   // Delay before right-to-left line starts (same as top-to-bottom lines)
-    swipeLineRtlWidth: '2px', // Width of vertical right-to-left swipe line
+    swipeLineRtlDuration: 500, // Duration of right-to-left line animation in milliseconds (Min: 0, Max: 5000; lower is faster)
+    swipeLineRtlDelay: 0,   // Delay before right-to-left line starts in milliseconds (Min: 0, Max: 5000; lower is earlier)
+    swipeLineRtlWidth: '2px', // Width of vertical right-to-left swipe line (e.g., '1px', '5px')
     swipeLineRtlColor: 'rgba(255, 255, 255, 0.3)', // Color of right-to-left swipe line
     
     // Color extraction
-    colorSampleSize: 5,        // Size of area to sample color from (pixels)
+    colorSampleSize: 5,        // Size of area to sample color from in pixels (Min: 1, Max: 50)
     colorSamplePosition: {    // Position to sample color (top-left area)
-        x: 0.1,                // 10% from left
-        y: 0.1                 // 10% from top
+        x: 0.1,                // Percentage from left (Min: 0.0, Max: 1.0, where 0.1 = 10%)
+        y: 0.1                 // Percentage from top (Min: 0.0, Max: 1.0, where 0.1 = 10%)
     },
     
     // Image zoom effect
-    zoomScale: 1.08,           // Zoom scale factor (1.08 = 8% zoom)
-    zoomDuration: 600,         // Duration of zoom animation (milliseconds) - increased for smoother animation
+    zoomScale: 1.08,           // Zoom scale factor (Min: 1.0, Max: 2.0; 1.08 = 8% zoom)
+    zoomDuration: 600,         // Duration of zoom animation in milliseconds (Min: 0, Max: 5000; lower is faster)
     zoomEasing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', // Smooth ease-in-out curve
     
     // Pulsating border
-    borderPulsateDuration: 1000, // Duration of border pulsate cycle (milliseconds)
-    borderPulsateIntensity: 0.5,  // Border opacity pulsate intensity (0-1)
-    borderWidth: '4px',         // Border width
+    borderPulsateDuration: 1000, // Duration of border pulsate cycle in milliseconds (Min: 100, Max: 10000; lower is faster)
+    borderPulsateIntensity: 0.5,  // Border opacity pulsate intensity (Min: 0.0, Max: 1.0)
+    borderWidth: '4px',         // Border width (e.g., '1px', '10px')
     borderColor: 'rgba(53, 196, 240, 0.8)', // Border color
     
     // CRT Shader effects (applied to image, not overlays)
-    crtScanlineOpacity: 0.12,  // Opacity of scanlines (0-1)
-    crtScanlineHeight: '1px',  // Height of each scanline
-    crtScanlineGap: '2px',     // Gap between scanlines
-    crtGlitchIntensity: 8,      // Horizontal glitch displacement in pixels
-    crtGlitchSpeed: 150,         // Glitch animation speed (milliseconds per frame)
-    crtChromaticAberration: 5, // Chromatic aberration offset in pixels
-    crtBrightness: 1.1,         // Slight brightness increase
-    crtContrast: 1.05,         // Slight contrast increase
-    crtSaturation: 1.1,         // Slight saturation increase
-    crtWarpBandHeight: '150px',   // Height of warping band
-    crtWarpBandSpeed: 800,       // Speed of warp band animation (milliseconds)
-    crtWarpBandChance: 0.4,      // Chance of warp band appearing (0-1, 1.0 = always on hover)
-    crtWarpIntensity: 2,        // Intensity of warp distortion in pixels (horizontal displacement) - increased
-    crtWarpBandOpacity: 0.8      // Opacity of the warp band overlay (0-1) - increased
+    crtScanlineOpacity: 0.12,  // Opacity of scanlines (Min: 0.0, Max: 1.0)
+    crtScanlineHeight: '1px',  // Height of each scanline (e.g., '1px', '3px')
+    crtScanlineGap: '2px',     // Gap between scanlines (e.g., '1px', '5px')
+    crtGlitchIntensity: 3,      // Horizontal glitch displacement in pixels (Min: 0, Max: 50)
+    
+    // -- Horizontal Glitch Parameters --
+    crtGlitchInterval: 3000,      // Time between each glitch check in milliseconds (Min: 16, Max: 2000; lower checks more frequently)
+    crtGlitchChance: 1,       // Probability of a glitch occurring at each check (Min: 0.0, Max: 1.0; 0.25 = 25% chance)
+    crtGlitchDuration: 100,      // Duration of the horizontal shift itself before resetting in ms (Min: 10, Max: 500; lower resets faster)
+    // ------------------------------------
+    
+    crtChromaticAberration: 5, // Chromatic aberration offset in pixels (Min: 0, Max: 20)
+    crtBrightness: 1.1,         // Brightness multiplier (Min: 1.0, Max: 2.0; 1.1 = +10%)
+    crtContrast: 1.05,         // Contrast multiplier (Min: 1.0, Max: 2.0; 1.05 = +5%)
+    crtSaturation: 1.1,         // Saturation multiplier (Min: 1.0, Max: 2.0; 1.1 = +10%)
+    crtWarpBandHeight: '150px',   // Height of warping band (e.g., '50px', '300px')
+    crtWarpBandSpeed: 1200,       // Speed of warp band animation in milliseconds (Min: 100, Max: 5000; lower is faster)
+    crtWarpBandChance: 0.2,      // Chance of warp band appearing on hover (Min: 0.0, Max: 1.0)
+    crtWarpIntensity: 1,        // Intensity of warp distortion in pixels (Min: 0, Max: 50)
+    crtWarpBandOpacity: 0.8      // Opacity of the warp band overlay (Min: 0.0, Max: 1.0)
 };
 
 (function() {
@@ -232,7 +239,7 @@ const HOVER_CONFIG = {
         
         const glitchInterval = setInterval(() => {
             // Random glitch - apply subtle horizontal shift and chromatic aberration
-            if (Math.random() > 0.75) { // 25% chance of glitch per frame
+            if (Math.random() < HOVER_CONFIG.crtGlitchChance) { 
                 const glitchX = (Math.random() - 0.5) * HOVER_CONFIG.crtGlitchIntensity * 2;
                 const chromaOffset = HOVER_CONFIG.crtChromaticAberration + Math.abs(glitchX) * 0.3;
                 
@@ -264,9 +271,9 @@ const HOVER_CONFIG = {
                             saturate(${HOVER_CONFIG.crtSaturation})
                         `, 'important');
                     }
-                }, HOVER_CONFIG.crtGlitchSpeed * 0.4);
+                }, HOVER_CONFIG.crtGlitchDuration);
             }
-        }, HOVER_CONFIG.crtGlitchSpeed);
+        }, HOVER_CONFIG.crtGlitchInterval);
         
         img.dataset.glitchInterval = glitchInterval.toString();
     }
@@ -275,11 +282,19 @@ const HOVER_CONFIG = {
      * Extract filename from image path
      */
     function getImageName(imageSrc) {
-        const filename = imageSrc.split('/').pop();
-        // Remove numbered prefix (e.g., "01_", "02_", etc.)
-        const nameWithoutPrefix = filename.replace(/^\d+_/, '');
+        let filename = imageSrc.split('/').pop();
+        
+        // Decode URI component to turn %20 and others into literal spaces
+        try {
+            filename = decodeURIComponent(filename);
+        } catch (e) {}
+
+        // Remove numbered prefix and any trailing spaces, underscores, or hyphens (e.g., "01_", "02 -", "12 ", etc.)
+        const nameWithoutPrefix = filename.replace(/^\d+[\s\-_]*/, '');
+        
         // Remove file extension
         const nameWithoutExt = nameWithoutPrefix.replace(/\.[^/.]+$/, '');
+        
         // Replace underscores and hyphens with spaces, capitalize words
         return nameWithoutExt
             .replace(/[_-]/g, ' ')
@@ -589,6 +604,33 @@ const HOVER_CONFIG = {
      * Initialize hover effects for gallery items
      */
     function initHoverEffects() {
+        // Expand galleries specifically to fill the whole viewport width
+        const galleryWrappers = document.querySelectorAll('.vce-image-masonry-gallery');
+        galleryWrappers.forEach(gallery => {
+            const rowContainer = gallery.closest('.vce-row-container');
+            if (rowContainer) {
+                // Break out of the boxed limit layout restrictions and force full viewport width
+                const updateWidth = () => {
+                    // Use clientWidth to avoid horizontal scrollbars caused by 100vw
+                    rowContainer.style.setProperty('width', document.documentElement.clientWidth + 'px', 'important');
+                    rowContainer.style.setProperty('max-width', 'none', 'important');
+                    rowContainer.style.setProperty('position', 'relative', 'important');
+                    rowContainer.style.setProperty('left', '50%', 'important');
+                    rowContainer.style.setProperty('transform', 'translateX(-50%)', 'important');
+                    rowContainer.style.setProperty('padding', '0', 'important');
+                };
+                
+                updateWidth();
+                window.addEventListener('resize', updateWidth);
+                
+                const innerRow = rowContainer.querySelector('.vce-row');
+                if (innerRow) {
+                    innerRow.style.setProperty('padding-left', '0', 'important');
+                    innerRow.style.setProperty('padding-right', '0', 'important');
+                }
+            }
+        });
+
         const galleryItems = document.querySelectorAll('.vce-image-masonry-gallery-item');
         
         galleryItems.forEach(item => {
@@ -796,6 +838,10 @@ const HOVER_CONFIG = {
                     gradientBox.style.opacity = '0';
                 }, HOVER_CONFIG.gradientBoxFadeDelay);
                 
+                // Explicitly set the transition delay for entering
+                swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeDelay}ms`;
+                rtlLineContainer.style.transitionDelay = `${HOVER_CONFIG.swipeLineRtlDelay}ms`;
+                
                 // Animate swipe lines
                 swipeLine1.style.transform = `translateY(${itemHeight}px)`;
                 swipeLine2.style.transform = `translateY(${itemHeight}px)`;
@@ -889,28 +935,29 @@ const HOVER_CONFIG = {
                 img.style.clipPath = '';
             }
             
-            // Reset animations
+            // Reset animations (animating out from bottom to top)
             swipeLine1.style.transform = 'translateY(-100%)';
+            swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeOutDelay}ms`;
             swipeLine2.style.transform = 'translateY(-100%)';
-            swipeLine2.style.transitionDelay = '0ms';
+            
             gradientBox.style.transform = 'translateY(-100%)';
             gradientBox.style.opacity = '0';
             gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity 0ms`;
             nameContainer.style.transform = 'translateX(-100%)';
-            rtlLineContainer.style.transform = 'translateX(100%)';
             rtlLineContainer.style.transitionDelay = '0ms';
+            rtlLineContainer.style.transform = 'translateX(100%)';
             
             // Hide scanlines and warp band
             scanlinesOverlay.style.opacity = '0';
             warpBandOverlay.style.opacity = '0';
             warpBandOverlay.style.transform = 'translateY(100%)';
             
-            // Reset delay for next hover
+            // Reset delay for next hover (after transition is fully done)
             setTimeout(() => {
                 swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeDelay}ms`;
                 gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
                 rtlLineContainer.style.transitionDelay = `${HOVER_CONFIG.swipeLineRtlDelay}ms`;
-            }, 50);
+            }, Math.max(50, HOVER_CONFIG.swipeOutDelay + HOVER_CONFIG.swipeDuration + 50));
         });
     }
     
