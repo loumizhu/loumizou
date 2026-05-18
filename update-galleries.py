@@ -52,6 +52,16 @@ def update_gallery(html_file):
         for logical_index, img_file in col_images:
             dom_order_items.append((logical_index, img_file, len(dom_order_items)))
     
+    def get_image_name(filename):
+        # Remove numbered prefix and any trailing spaces, underscores, or hyphens
+        name_without_prefix = re.sub(r'^\d+[\s\-_]*', '', filename)
+        # Remove file extension
+        name_without_ext = re.sub(r'\.[^/.]+$', '', name_without_prefix)
+        # Replace underscores and hyphens with spaces, capitalize words
+        name = name_without_ext.replace('_', ' ').replace('-', ' ')
+        # Capitalize each word
+        return ' '.join(word.capitalize() for word in name.split())
+
     # Build HTML - use DOM position as data-photoswipe-index so PhotoSwipe shows correct image
     columns_html = []
     for col_index, col_images in enumerate(columns):
@@ -60,8 +70,9 @@ def update_gallery(html_file):
             # Find DOM position for this logical index
             dom_pos = next((pos for idx, _, pos in dom_order_items if idx == logical_index), logical_index)
             img_path = f"images/{img_file.name}"
+            img_name = get_image_name(img_file.name)
             # Use DOM position as index so PhotoSwipe shows the correct image
-            items.append(f'<a href="{img_path}" data-photoswipe-image="{gallery_id}" data-photoswipe-index="{dom_pos}" data-photoswipe-item="photoswipe-{gallery_id}" class="vce-image-masonry-gallery-item" data-pswp-uid="{dom_pos + 1}"><img decoding="async" class="vce-image-masonry-gallery-img" src="{img_path}" alt=""></a>')
+            items.append(f'<a href="{img_path}" data-photoswipe-image="{gallery_id}" data-photoswipe-index="{dom_pos}" data-photoswipe-item="photoswipe-{gallery_id}" class="vce-image-masonry-gallery-item" data-pswp-uid="{dom_pos + 1}" data-caption="{img_name}"><img decoding="async" class="vce-image-masonry-gallery-img" src="{img_path}" alt="{img_name}" title="{img_name}"></a>')
         columns_html.append(f'<div class="vce-image-masonry-gallery-column">{"".join(items)}</div>')
     
     new_gallery_content = ''.join(columns_html)
