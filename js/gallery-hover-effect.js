@@ -519,6 +519,24 @@ const HOVER_CONFIG = {
             document.head.appendChild(style);
         }
         
+        // Short story line under the title (data-lz-tip, written by update-galleries.py)
+        const tipText = item.dataset.lzTip;
+        if (tipText) {
+            nameContainer.style.whiteSpace = 'normal';
+            nameContainer.style.maxWidth = 'calc(100% - 16px)';
+            const title = document.createElement('strong');
+            title.className = 'gallery-hover-title';
+            title.textContent = imageName;
+            title.style.cssText = 'display:block;font-weight:600;';
+            const tip = document.createElement('span');
+            tip.className = 'gallery-hover-tip';
+            tip.textContent = tipText;
+            tip.style.cssText = 'display:block;font-size:13px;font-weight:400;line-height:1.4;margin-top:3px;opacity:.92;';
+            nameContainer.textContent = '';
+            nameContainer.appendChild(title);
+            nameContainer.appendChild(tip);
+        }
+
         // Add background element to name container
         nameContainer.appendChild(nameBackground);
         
@@ -642,7 +660,7 @@ const HOVER_CONFIG = {
             
             // Get image name
             const imageSrc = img.src || img.getAttribute('src');
-            const imageName = getImageName(imageSrc);
+            const imageName = item.dataset.lzTitle || getImageName(imageSrc);
             
             // Wait for image to load to extract color
             if (img.complete && img.naturalWidth > 0) {

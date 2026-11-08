@@ -1,0 +1,39 @@
+/* Lightbox side card (PhotoSwipe caption holds the card HTML written by update-galleries.py) */
+:root { --lz-card-w: 360px; --lz-sheet-h: 42vh; }
+
+.pswp--lz .pswp__caption--fake { display: none !important; }
+.pswp--lz .pswp__caption {
+  position: fixed; top: 0; right: 0; bottom: 0; left: auto;
+  width: var(--lz-card-w); min-height: 0;
+  background: #051626; border-left: 1px solid rgba(21, 146, 185, .35);
+  overflow-y: auto; overscroll-behavior: contain; z-index: 1600;
+}
+.pswp--lz .pswp__caption__center { max-width: none; margin: 0; padding: 64px 28px 32px; text-align: left; }
+.pswp--lz .pswp__scroll-wrap { width: calc(100% - var(--lz-card-w)); }
+.pswp--lz .pswp__ui--idle .pswp__caption { opacity: 1; }
+
+.lz-card { font-family: Roboto, "Helvetica Neue", Arial, sans-serif; color: #b8cdd9; }
+.lz-card-project { margin: 0 0 6px; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: #5fb3d3; }
+.lz-card-title {
+  margin: 0 0 16px; font-family: VT323, monospace; font-weight: 400; font-size: 34px; line-height: 1.05;
+  color: #35c4f0; text-shadow: 0 0 10px #201e81;
+}
+.lz-card-desc { margin: 0 0 18px; font-size: 15px; line-height: 1.65; }
+.lz-card-craft {
+  margin: 0 0 18px; padding: 10px 12px; font-size: 13px; line-height: 1.5; color: #9fc4d6;
+  background: rgba(21, 146, 185, .08); border-left: 2px solid #1592b9; border-radius: 2px;
+}
+.lz-card-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 22px; padding: 0; list-style: none; }
+.lz-card-tags li { margin: 0; padding: 3px 9px; font-size: 12px; color: #8fb8cc; border: 1px solid rgba(21, 146, 185, .35); border-radius: 999px; }
+.lz-card-cta { display: inline-block; font-size: 14px; color: #35c4f0; text-decoration: none; border-bottom: 1px solid rgba(53, 196, 240, .45); }
+.lz-card-cta:hover, .lz-card-cta:focus { color: #fff; border-bottom-color: #fff; }
+
+@media (max-width: 899px) {
+  .pswp--lz .pswp__scroll-wrap { width: 100%; height: calc(100% - var(--lz-sheet-h)); }
+  .pswp--lz .pswp__caption {
+    top: auto; left: 0; width: 100%; height: var(--lz-sheet-h);
+    border-left: 0; border-top: 1px solid rgba(21, 146, 185, .35);
+  }
+  .pswp--lz .pswp__caption__center { padding: 18px 16px 24px; }
+  .lz-card-title { font-size: 28px; margin-bottom: 10px; }
+}

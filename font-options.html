@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Pixel Font Options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=VT323&family=Pixelify+Sans:wght@400;600&family=Jersey+10&family=Tiny5&family=Silkscreen:wght@400;700&family=DotGothic16&family=Handjet:wght@300;500&family=Sixtyfour&family=Workbench&family=Press+Start+2P&family=Micro+5&family=Doto:wght@500;800&family=Jacquard+12&family=Bytesized&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #011423; --panel: #04192c; --line: rgba(21,146,185,.28); --blue: #1592b9; --cyan: #35c4f0; --text: #9fb8c8; --soft: #8fdcf5; --glow: #201e81; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: Roboto, Arial, sans-serif; }
+  header.top { padding: 28px 16px 8px; max-width: 1100px; margin: 0 auto; }
+  header.top h1 { font-family: VT323, monospace; font-weight: 400; font-size: 40px; color: var(--cyan); margin: 0 0 6px; text-shadow: 0 0 10px var(--glow); }
+  header.top p { margin: 0; max-width: 760px; line-height: 1.6; }
+  nav.jump { position: sticky; top: 0; z-index: 5; background: rgba(1,20,35,.94); backdrop-filter: blur(6px); border-bottom: 1px solid var(--line); }
+  nav.jump .in { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; }
+  nav.jump a { flex: none; color: var(--text); text-decoration: none; font-size: 13px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; }
+  nav.jump a:hover, nav.jump a:focus { color: #fff; border-color: var(--cyan); }
+  main { max-width: 1100px; margin: 0 auto; padding: 18px 16px 60px; display: grid; gap: 28px; }
+  .opt { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--panel); scroll-margin-top: 64px; }
+  .meta { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 14px; padding: 14px 18px; border-bottom: 1px solid var(--line); background: rgba(21,146,185,.06); }
+  .num { font-family: VT323, monospace; font-size: 28px; color: var(--cyan); line-height: 1; }
+  .name { font-weight: 500; color: #dfeef6; font-size: 17px; }
+  .note { font-size: 14px; color: var(--text); flex: 1 1 320px; }
+  .badge { font-size: 12px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); color: var(--soft); }
+  /* mini page mock */
+  .mock { --f: VT323; --menu: 20px; --h: 46px; --body: 22px; --lh: 1.15; font-family: var(--f), monospace; }
+  .bar { display: flex; align-items: center; gap: 18px; padding: 14px 18px; background: linear-gradient(180deg, #050c18, #071a2c); border-bottom: 1px solid var(--line); overflow-x: auto; }
+  .logo-img { flex: none; width: 46px; height: auto; }
+  .bar a { flex: none; font-size: var(--menu); color: #f2f6ff; text-decoration: none; padding: 4px 10px; border-radius: 8px; }
+  .bar a.on { background: #06104a; }
+  .content { padding: 26px 22px 30px; max-width: 760px; margin: 0 auto; }
+  .content h2 { margin: 0 0 18px; text-align: center; font-family: var(--f), monospace; font-weight: var(--hw, 400); font-size: var(--h); line-height: 1.05; color: #adffc5; text-shadow: 0 0 10px #32aadc, 0 0 22px #32aadc; }
+  .content p, .content li { font-size: var(--body); line-height: var(--lh); color: var(--soft); text-shadow: 2px 2px 0 #1d2a8a; margin: 0 0 12px; }
+  .content ul { margin: 0 0 18px; padding-left: 22px; }
+  .content strong { color: #d6f3ff; }
+  .content .mail { color: var(--cyan); }
+  .foot { text-align: center; padding: 14px 16px 18px; border-top: 1px solid var(--line); font-size: calc(var(--body) * .8); color: var(--blue); text-shadow: 0 0 8px var(--glow); }
+  .foot a { color: var(--blue); text-decoration: none; margin: 0 8px; }
+  @media (max-width: 640px) {
+    .mock { --h: calc(var(--h-m, 36px)); --body: var(--body-m, 18px); }
+    .content { padding: 20px 14px 24px; }
+  }
+</style>
+</head>
+<body>
+<header class="top">
+  <h1>Pixel font options</h1>
+  <p>Each card is the Contact page set in a different pixel font: menu, big heading, body text and footer. Sizes are tuned per font so they read at the same visual size. Pick a number.</p>
+</header>
+<nav class="jump" aria-label="Fonts"><div class="in" id="jump"></div></nav>
+<main id="list"></main>
+
+<template id="mockTpl">
+  <section class="opt">
+    <div class="meta"><span class="num"></span><span class="name"></span><span class="badge"></span><span class="note"></span></div>
+    <div class="mock">
+      <div class="bar"><img class="logo-img" src="img/Logo-Signature-Z-Gharbi-loumizou-Maghribi-DAUB-Inked-400px.png" alt="Loumizou logo" width="46" height="35"><a>Illustrations</a><a>Characters</a><a>Environments</a><a>Storyboards</a><a class="on">Contact</a></div>
+      <div class="content">
+        <h2>Get in Touch</h2>
+        <p>Are you interested in the art process? Need an artwork?</p>
+        <p>With a solid foundation in academic drawing, I enjoy taking on challenges and keep looking for new ways to draw your ideas.</p>
+        <ul>
+          <li><strong>Creative artworks:</strong> a website banner, a character design or a concept piece.</li>
+          <li><strong>Mood and palette:</strong> art tuned to your project&rsquo;s mood and colours.</li>
+        </ul>
+        <p>Have a project in mind? Write to <span class="mail">contact@loumizou.com</span></p>
+      </div>
+      <div class="foot"><a>Illustrations</a><a>Characters</a><a>Environments</a><a>Storyboards</a><a>Contact</a><br>&copy; all rights reserved - contact@loumizou.com</div>
+    </div>
+  </section>
+</template>
+
+<script>
+  // f: family, menu/h/body: px sizes, lh: line height, hw: heading weight
+  const FONTS = [
+    { f: 'VT323', badge: 'current', note: 'What the site uses now. Tall, narrow terminal letters; very readable in body text.', menu: 22, h: 54, body: 23, lh: 1.15 },
+    { f: 'Pixelify Sans', badge: 'best all-round', note: 'Modern pixel shapes with a real bold. Reads like a clean UI font, still clearly pixel.', menu: 17, h: 42, body: 17, lh: 1.5, hw: 600 },
+    { f: 'Jersey 10', badge: 'retro game', note: 'Chunky arcade feel with tight spacing. Great headings, fine body text at larger sizes.', menu: 22, h: 56, body: 23, lh: 1.2 },
+    { f: 'Tiny5', badge: 'crisp', note: 'Small-pixel grid, compact and sharp. Strong for menus and labels.', menu: 17, h: 44, body: 18, lh: 1.45 },
+    { f: 'Silkscreen', badge: 'headings', note: 'Wide, bold, all-caps look. Best for menu and headings only, too heavy for paragraphs.', menu: 14, h: 34, body: 14, lh: 1.6, hw: 700 },
+    { f: 'DotGothic16', badge: 'japanese RPG', note: 'Dot-matrix with a 90s console RPG flavour. Body text stays readable.', menu: 16, h: 40, body: 17, lh: 1.55 },
+    { f: 'Handjet', badge: 'tall & elegant', note: 'Variable pixel font, narrow and tall, more refined than VT323. Light body, medium headings.', menu: 22, h: 54, body: 22, lh: 1.25, hw: 500 },
+    { f: 'Sixtyfour', badge: 'CRT', note: 'Inspired by 8-bit home computers, with a scanline texture. Headings only.', menu: 13, h: 30, body: 14, lh: 1.6 },
+    { f: 'Workbench', badge: 'scanlines', note: 'Bold display face with built-in scanlines. Strong identity for titles, not for body.', menu: 16, h: 40, body: 17, lh: 1.4 },
+    { f: 'Press Start 2P', badge: 'classic 8-bit', note: 'The famous NES-style font. Very wide: use small sizes, headings and menus only.', menu: 11, h: 26, body: 12, lh: 1.9 },
+    { f: 'Micro 5', badge: 'micro', note: 'Tiny pixel letters scaled up. Very compact, quirky, good for labels and headings.', menu: 24, h: 60, body: 25, lh: 1.1 },
+    { f: 'Doto', badge: 'LED dots', note: 'Round dot-matrix, like an LED sign. Distinctive headings; body works at weight 500.', menu: 17, h: 42, body: 18, lh: 1.5, hw: 800 },
+    { f: 'Jacquard 12', badge: 'pixel blackletter', note: 'Gothic letters on a pixel grid. Fits fantasy and medieval work; headings only.', menu: 20, h: 50, body: 22, lh: 1.2 },
+    { f: 'Bytesized', badge: 'ultra small', note: 'Extreme low-res letters. A playful accent for the logo or labels, not for reading.', menu: 20, h: 46, body: 22, lh: 1.25 },
+  ];
+  const tpl = document.getElementById('mockTpl'), list = document.getElementById('list'), jump = document.getElementById('jump');
+  FONTS.forEach((o, i) => {
+    const n = i + 1, id = 'font-' + n;
+    const node = tpl.content.firstElementChild.cloneNode(true);
+    node.id = id;
+    node.querySelector('.num').textContent = String(n).padStart(2, '0');
+    node.querySelector('.name').textContent = o.f;
+    node.querySelector('.badge').textContent = o.badge;
+    node.querySelector('.note').textContent = o.note;
+    const m = node.querySelector('.mock');
+    m.style.setProperty('--f', `'${o.f}'`);
+    m.style.setProperty('--menu', o.menu + 'px');
+    m.style.setProperty('--h', o.h + 'px');
+    m.style.setProperty('--body', o.body + 'px');
+    m.style.setProperty('--lh', o.lh);
+    m.style.setProperty('--h-m', Math.round(o.h * .78) + 'px');
+    m.style.setProperty('--body-m', Math.round(o.body * .88) + 'px');
+    if (o.hw) m.style.setProperty('--hw', o.hw);
+    list.appendChild(node);
+    const a = document.createElement('a');
+    a.href = '#' + id; a.textContent = n + ' · ' + o.f;
+    jump.appendChild(a);
+  });
+</script>
+</body>
+</html>
