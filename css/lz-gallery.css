@@ -37,3 +37,91 @@
   .pswp--lz .pswp__caption__center { padding: 18px 16px 24px; }
   .lz-card-title { font-size: 28px; margin-bottom: 10px; }
 }
+
+/* Gallery Hover Card: Dark, Semi-Transparent, High-Precision Motion */
+.gallery-hover-card {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(340px, calc(100% - 24px));
+  padding: 10px 14px 11px;
+  background: rgba(3, 8, 15, 0.90);
+  border: 1px solid rgba(53, 196, 240, 0.28);
+  border-left: 3px solid #35c4f0;
+  border-radius: 2px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.70);
+  z-index: 25;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.gallery-hover-card.is-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gallery-hover-card .lz-hover-title {
+  display: block;
+  font-family: VT323, monospace;
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.1;
+  color: #35c4f0;
+  letter-spacing: 0.5px;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.gallery-hover-card .lz-hover-desc {
+  display: block;
+  font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.45;
+  color: #d8ecf5;
+  margin-top: 5px;
+  text-wrap: pretty;
+}
+
+.gallery-hover-card .lz-hover-cursor {
+  display: inline-block;
+  color: #35c4f0;
+  font-weight: 700;
+  margin-left: 2px;
+  vertical-align: baseline;
+  animation: lzCursorBlink 380ms steps(2, start) infinite;
+}
+
+.gallery-hover-card .lz-hover-cursor.is-settled {
+  animation: none;
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+}
+
+.gallery-hover-card .lz-hover-garble {
+  display: inline-block;
+  color: #8fdcf5;
+  font-family: VT323, monospace;
+  font-weight: 400;
+}
+
+@keyframes lzCursorBlink {
+  to { visibility: hidden; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-hover-card {
+    transition: none !important;
+    transform: none !important;
+  }
+  .gallery-hover-card .lz-hover-cursor {
+    display: none !important;
+  }
+}

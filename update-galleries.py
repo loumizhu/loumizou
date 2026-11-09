@@ -122,7 +122,7 @@ def update_gallery(html_file):
                 f'<a href="{img_path}" data-photoswipe-image="{gallery_id}" data-photoswipe-index="{dom_pos}" '
                 f'data-photoswipe-item="photoswipe-{gallery_id}" class="vce-image-masonry-gallery-item" '
                 f'data-pswp-uid="{dom_pos + 1}" data-caption="{title}"{extra} data-photoswipe-caption="{caption}">'
-                f'<img decoding="async" class="vce-image-masonry-gallery-img" src="{img_path}" alt="{escape(info["alt"])}"></a>')
+                f'<img decoding="async" class="vce-image-masonry-gallery-img" src="{img_path}" alt="{escape(info["alt"])}" title="{title}"></a>')
         columns_html.append(f'<div class="vce-image-masonry-gallery-column">{"".join(items)}</div>')
     new_gallery_content = ''.join(columns_html)
 

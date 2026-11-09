@@ -26,8 +26,8 @@ const HOVER_CONFIG = {
     nameRevealDelay: 200,     // Delay before text starts animating in milliseconds (Min: 0, Max: 5000; lower is earlier)
     nameBackgroundOpacity: 0.85, // Background opacity for name (Min: 0.0, Max: 1.0)
     namePadding: '8px 16px',   // Padding for name container
-    nameFontSize: '15px',      // Font size for name
-    nameColor: '#ffffff',      // Text color (hex or rgba)
+    nameFontSize: '24px',      // Font size for name
+    nameColor: '#35c4f0',      // Text color (hex or rgba)
     nameBackgroundColor: 'rgba(107, 110, 108, 0.25)', // Fallback background color
     namePulsateDuration: 2000, // Duration of pulsate animation cycle in milliseconds (Min: 100, Max: 10000; lower is faster)
     namePulsateIntensity: 0.15, // Pulsate intensity, how much opacity changes (Min: 0.0, Max: 1.0)
@@ -391,6 +391,230 @@ const HOVER_CONFIG = {
     }
     
     /**
+     * Escape HTML special characters
+     */
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Mechanical cipher character set for kinetic garble animation
+    const CIPHER_GLYPHS = ['/', '\\', '_', '-', '>', '+', '*', '#', '%', ':', '~', '^'];
+
+    function getRandomGlyph() {
+        return CIPHER_GLYPHS[Math.floor(Math.random() * CIPHER_GLYPHS.length)];
+    }
+
+    /**
+     * Injects card styles if not already provided by external CSS
+     */
+    function injectHoverCardStyles() {
+        if (document.getElementById('gallery-hover-card-style')) return;
+        const style = document.createElement('style');
+        style.id = 'gallery-hover-card-style';
+        style.textContent = `
+            .gallery-hover-card {
+                position: absolute;
+                bottom: 12px;
+                left: 12px;
+                box-sizing: border-box;
+                width: max-content;
+                max-width: min(340px, calc(100% - 24px));
+                padding: 10px 14px 11px;
+                background: rgba(3, 8, 15, 0.90);
+                border: 1px solid rgba(53, 196, 240, 0.28);
+                border-left: 3px solid #35c4f0;
+                border-radius: 2px;
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.70);
+                z-index: 25;
+                pointer-events: none;
+                opacity: 0;
+                transform: translateY(6px);
+                transition: opacity 120ms cubic-bezier(0.16, 1, 0.3, 1), transform 120ms cubic-bezier(0.16, 1, 0.3, 1);
+                will-change: opacity, transform;
+            }
+            .gallery-hover-card.is-active {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            .gallery-hover-card .lz-hover-title {
+                display: block;
+                font-family: VT323, monospace;
+                font-size: 24px;
+                font-weight: 400;
+                line-height: 1.1;
+                color: #35c4f0;
+                letter-spacing: 0.5px;
+                margin: 0;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .gallery-hover-card .lz-hover-desc {
+                display: block;
+                font-family: Roboto, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+                font-size: 13px;
+                font-weight: 400;
+                line-height: 1.45;
+                color: #d8ecf5;
+                margin-top: 5px;
+                text-wrap: pretty;
+            }
+            .gallery-hover-card .lz-hover-cursor {
+                display: inline-block;
+                color: #35c4f0;
+                font-weight: 700;
+                margin-left: 2px;
+                vertical-align: baseline;
+                animation: lzCursorBlink 380ms steps(2, start) infinite;
+            }
+            .gallery-hover-card .lz-hover-cursor.is-settled {
+                animation: none;
+                opacity: 0;
+                transition: opacity 120ms ease-out;
+            }
+            .gallery-hover-card .lz-hover-garble {
+                display: inline-block;
+                color: #8fdcf5;
+                font-family: VT323, monospace;
+                font-weight: 400;
+            }
+            @keyframes lzCursorBlink {
+                to { visibility: hidden; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .gallery-hover-card {
+                    transition: none !important;
+                    transform: none !important;
+                }
+                .gallery-hover-card .lz-hover-cursor {
+                    display: none !important;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    /**
+     * Motion Design Typing & Kinetic Garble Choreography
+     * Total appearance timeline: Exactly 1.0 second (1000ms).
+     * - Anticipation (0-40ms): Card snaps in, cursor wakes up
+     * - Title Stream (40-320ms): Title decodes rapidly with dynamic garble character lead
+     * - Baton Pass (320-360ms): Cursor shifts to description line
+     * - Description Stream (360-930ms): Storyline decodes with kinetic cipher lead
+     * - Settle & Resolution (930-1000ms): Cursor smoothly settles out, leaving crisp copy
+     */
+    function startCardAnimation(cardEl, titleEl, descEl, titleText, descText) {
+        if (!cardEl || !titleEl) return null;
+
+        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            cardEl.classList.add('is-active');
+            titleEl.textContent = titleText;
+            if (descEl) descEl.textContent = descText || '';
+            return { cancel: function() {} };
+        }
+
+        cardEl.classList.add('is-active');
+        titleEl.textContent = '';
+        if (descEl) descEl.textContent = '';
+
+        let isCancelled = false;
+        let rafId = null;
+        const startTime = performance.now();
+
+        const TOTAL_MS = 1000; // Exactly 1.0s total choreography
+        const TITLE_START = 40; // 40ms anticipation with blinking cursor
+        const hasDesc = Boolean(descEl && descText && descText.trim().length > 0);
+
+        const TITLE_DURATION = hasDesc 
+            ? Math.min(300, Math.max(180, titleText.length * 14))
+            : Math.min(700, Math.max(300, titleText.length * 24));
+        const TITLE_END = TITLE_START + TITLE_DURATION;
+
+        const DESC_START = TITLE_END + 40;
+        const DESC_END = 930;
+        const DESC_DURATION = Math.max(100, DESC_END - DESC_START);
+
+        let lastGlyphTime = 0;
+        let currentGlyph = getRandomGlyph();
+
+        function tick(now) {
+            if (isCancelled) return;
+            const elapsed = now - startTime;
+
+            // Cycle through energetic mechanical cipher glyphs every ~35ms
+            if (now - lastGlyphTime > 35) {
+                currentGlyph = getRandomGlyph();
+                lastGlyphTime = now;
+            }
+
+            // PHASE 1: Anticipation (0ms -> TITLE_START)
+            if (elapsed < TITLE_START) {
+                titleEl.innerHTML = '<span class="lz-hover-cursor">▌</span>';
+                if (descEl) descEl.innerHTML = '';
+            }
+            // PHASE 2: Title Typing with Kinetic Garble Lead (TITLE_START -> TITLE_END)
+            else if (elapsed <= TITLE_END) {
+                const progress = Math.min(1, (elapsed - TITLE_START) / TITLE_DURATION);
+                const revealed = Math.floor(progress * titleText.length);
+                const stable = titleText.slice(0, revealed);
+                const hasLead = revealed < titleText.length;
+                const leadHtml = hasLead ? `<span class="lz-hover-garble">${currentGlyph}</span>` : '';
+
+                titleEl.innerHTML = `${escapeHtml(stable)}${leadHtml}<span class="lz-hover-cursor">▌</span>`;
+                if (descEl) descEl.innerHTML = '';
+            }
+            // PHASE 3: Description Typing with Kinetic Garble Lead (TITLE_END -> DESC_END)
+            else if (hasDesc && elapsed <= DESC_END) {
+                titleEl.textContent = titleText; // Title 100% resolved and locked
+
+                if (elapsed < DESC_START) {
+                    descEl.innerHTML = '<span class="lz-hover-cursor">▌</span>';
+                } else {
+                    const descProgress = Math.min(1, (elapsed - DESC_START) / DESC_DURATION);
+                    const revealed = Math.floor(descProgress * descText.length);
+                    const stable = descText.slice(0, revealed);
+                    const hasLead = revealed < descText.length;
+                    const leadHtml = hasLead ? `<span class="lz-hover-garble">${currentGlyph}</span>` : '';
+
+                    descEl.innerHTML = `${escapeHtml(stable)}${leadHtml}<span class="lz-hover-cursor">▌</span>`;
+                }
+            }
+            // PHASE 4: Settle & Resolution (DESC_END -> TOTAL_MS)
+            else if (elapsed <= TOTAL_MS) {
+                titleEl.textContent = titleText;
+                if (hasDesc) {
+                    descEl.innerHTML = `${escapeHtml(descText)}<span class="lz-hover-cursor is-settled">▌</span>`;
+                } else {
+                    titleEl.innerHTML = `${escapeHtml(titleText)}<span class="lz-hover-cursor is-settled">▌</span>`;
+                }
+            }
+            // COMPLETED (elapsed > TOTAL_MS)
+            else {
+                titleEl.textContent = titleText;
+                if (hasDesc) descEl.textContent = descText;
+                return;
+            }
+
+            rafId = requestAnimationFrame(tick);
+        }
+
+        rafId = requestAnimationFrame(tick);
+
+        return {
+            cancel: function() {
+                isCancelled = true;
+                if (rafId) cancelAnimationFrame(rafId);
+            }
+        };
+    }
+    
+    /**
      * Create hover overlay elements
      */
     function createHoverOverlay(item, imageName, imageColor) {
@@ -442,121 +666,29 @@ const HOVER_CONFIG = {
             z-index: 3;
         `;
         
-        // Create blue gradient box that follows the lines
-        const gradientBox = document.createElement('div');
-        gradientBox.className = 'gallery-gradient-box';
-        gradientBox.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: ${HOVER_CONFIG.gradientBoxHeight};
-            background: linear-gradient(to bottom, 
-                ${HOVER_CONFIG.gradientBoxColor} 0%,
-                ${HOVER_CONFIG.gradientBoxColor.replace(/[\d.]+\)$/, '0)')} 100%
-            );
-            transform: translateY(-100%);
-            transition: transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms;
-            opacity: 0;
-            z-index: 2;
-            pointer-events: none;
-        `;
-        
-        // Create name container (width fits content)
-        const nameContainer = document.createElement('div');
-        nameContainer.className = 'gallery-hover-name';
-        nameContainer.textContent = imageName;
-        nameContainer.style.cssText = `
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: fit-content;
-            max-width: 100%;
-            padding: ${HOVER_CONFIG.namePadding};
-            background: transparent;
-            color: ${HOVER_CONFIG.nameColor};
-            font-size: ${HOVER_CONFIG.nameFontSize};
-            font-weight: 500;
-            transform: translateX(-100%);
-            transition: transform ${HOVER_CONFIG.nameRevealDuration}ms ${HOVER_CONFIG.swipeEasing};
-            transition-delay: ${HOVER_CONFIG.nameRevealDelay}ms;
-            white-space: nowrap;
-            overflow: visible;
-            text-overflow: ellipsis;
-            z-index: 10;
-            pointer-events: none;
-        `;
-        
-        // Create pulsate background element
-        const nameBackground = document.createElement('div');
-        nameBackground.className = 'gallery-hover-name-bg';
-        nameBackground.style.cssText = `
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: ${toRgba(imageColor, HOVER_CONFIG.nameBackgroundOpacity)};
-            border-radius: 6px;
-            z-index: -1;
-            animation: pulsate ${HOVER_CONFIG.namePulsateDuration}ms ease-in-out infinite;
-        `;
-        
-        // Add pulsate keyframes if not already added
-        if (!document.getElementById('gallery-hover-keyframes')) {
-            const style = document.createElement('style');
-            style.id = 'gallery-hover-keyframes';
-            style.textContent = `
-                @keyframes pulsate {
-                    0%, 100% {
-                        opacity: ${HOVER_CONFIG.nameBackgroundOpacity};
-                    }
-                    50% {
-                        opacity: ${HOVER_CONFIG.nameBackgroundOpacity * (1 - HOVER_CONFIG.namePulsateIntensity)};
-                    }
-                }
-            `;
-            document.head.appendChild(style);
-        }
-        
-        // Short story line under the title (data-lz-tip, written by update-galleries.py)
-        const tipText = item.dataset.lzTip;
+        // Create motion design hover card (dark, semi-transparent, mechanical typography)
+        const tipText = item.dataset.lzTip || '';
+        const card = document.createElement('div');
+        card.className = 'gallery-hover-card';
+
+        const titleEl = document.createElement('strong');
+        titleEl.className = 'lz-hover-title';
+
+        const descEl = document.createElement('span');
+        descEl.className = 'lz-hover-desc';
+
+        card.appendChild(titleEl);
         if (tipText) {
-            nameContainer.style.whiteSpace = 'normal';
-            nameContainer.style.maxWidth = 'calc(100% - 16px)';
-            const title = document.createElement('strong');
-            title.className = 'gallery-hover-title';
-            title.textContent = imageName;
-            title.style.cssText = 'display:block;font-weight:600;';
-            const tip = document.createElement('span');
-            tip.className = 'gallery-hover-tip';
-            tip.textContent = tipText;
-            tip.style.cssText = 'display:block;font-size:13px;font-weight:400;line-height:1.4;margin-top:3px;opacity:.92;';
-            nameContainer.textContent = '';
-            nameContainer.appendChild(title);
-            nameContainer.appendChild(tip);
+            card.appendChild(descEl);
         }
 
-        // Add background element to name container
-        nameContainer.appendChild(nameBackground);
-        
-        // Create right-to-left swipe line container (vertical line)
-        const rtlLineContainer = document.createElement('div');
-        rtlLineContainer.className = 'gallery-rtl-line-container';
-        rtlLineContainer.style.cssText = `
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            width: ${HOVER_CONFIG.swipeLineRtlWidth};
-            height: 100%;
-            background: ${HOVER_CONFIG.swipeLineRtlColor};
-            transform: translateX(100%);
-            transition: transform ${HOVER_CONFIG.swipeLineRtlDuration}ms ${HOVER_CONFIG.swipeEasing};
-            transition-delay: ${HOVER_CONFIG.swipeLineRtlDelay}ms;
-            z-index: 3;
-        `;
-        
+        // Store element references on overlay for hover animation
+        overlay._card = card;
+        overlay._titleEl = titleEl;
+        overlay._descEl = descEl;
+        overlay._titleText = imageName;
+        overlay._descText = tipText;
+
         // Create CRT scanlines overlay (subtle, doesn't obscure image)
         const scanlinesOverlay = document.createElement('div');
         scanlinesOverlay.className = 'gallery-crt-scanlines';
@@ -607,11 +739,9 @@ const HOVER_CONFIG = {
                 inset 0 0 ${HOVER_CONFIG.crtWarpIntensity * 2}px rgba(255, 255, 255, ${HOVER_CONFIG.crtWarpBandOpacity * 0.7});
         `;
         
-        overlay.appendChild(gradientBox);
         overlay.appendChild(swipeLine1);
         overlay.appendChild(swipeLine2);
-        overlay.appendChild(rtlLineContainer);
-        overlay.appendChild(nameContainer);
+        overlay.appendChild(card);
         overlay.appendChild(scanlinesOverlay);
         overlay.appendChild(warpBandOverlay);
         
@@ -772,15 +902,18 @@ const HOVER_CONFIG = {
             
             // Ensure the image can be transformed (override any conflicting styles)
             img.style.transform = originalTransform || 'none';
+            // Suppress native browser title tooltip from conflicting with custom hover card
+            if (img.hasAttribute('title')) {
+                img.removeAttribute('title');
+            }
         }
         
+        let cardAnim = null;
+
         // Handle hover
         item.addEventListener('mouseenter', function() {
             const swipeLine1 = overlay.querySelector('.gallery-swipe-line-1');
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
-            const gradientBox = overlay.querySelector('.gallery-gradient-box');
-            const nameContainer = overlay.querySelector('.gallery-hover-name');
-            const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
             const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
             const img = item.querySelector('img');
@@ -799,7 +932,7 @@ const HOVER_CONFIG = {
             item.style.zIndex = '100';
             item.style.position = 'relative';
             
-            // Animate swipe lines and gradient box from top to bottom
+            // Animate swipe lines and trigger effects
             requestAnimationFrame(() => {
                 const itemHeight = item.offsetHeight;
                 
@@ -812,13 +945,8 @@ const HOVER_CONFIG = {
                 // Zoom in the image and apply CRT effects
                 if (img) {
                     const originalTransform = img.dataset.originalTransform || 'none';
-                    // Always apply zoom, combining with existing transform if present
-                    // Use !important to ensure it overrides any conflicting CSS
-                    // Apply smooth transition
                     img.style.transition = `transform ${HOVER_CONFIG.zoomDuration}ms ${HOVER_CONFIG.zoomEasing}`;
                     if (originalTransform !== 'none') {
-                        // Combine transforms: apply scale, then original transform
-                        // This ensures the scale is applied relative to the image center
                         img.style.setProperty('transform', `scale(${HOVER_CONFIG.zoomScale}) ${originalTransform}`, 'important');
                     } else {
                         img.style.setProperty('transform', `scale(${HOVER_CONFIG.zoomScale})`, 'important');
@@ -835,30 +963,8 @@ const HOVER_CONFIG = {
                     startGlitchEffect(img);
                 }
                 
-                // Animate gradient box first (it follows the lines)
-                // Reset position first
-                gradientBox.style.transition = 'none';
-                gradientBox.style.transform = 'translateY(-100%)';
-                gradientBox.style.opacity = '0';
-                
-                // Force reflow
-                gradientBox.offsetHeight;
-                
-                // Now animate
-                gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
-                gradientBox.style.opacity = '1';
-                requestAnimationFrame(() => {
-                    gradientBox.style.transform = `translateY(${itemHeight}px)`;
-                });
-                
-                // Start fading gradient box after it has moved a bit (increased delay for visibility)
-                setTimeout(() => {
-                    gradientBox.style.opacity = '0';
-                }, HOVER_CONFIG.gradientBoxFadeDelay);
-                
                 // Explicitly set the transition delay for entering
                 swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeDelay}ms`;
-                rtlLineContainer.style.transitionDelay = `${HOVER_CONFIG.swipeLineRtlDelay}ms`;
                 
                 // Animate swipe lines
                 swipeLine1.style.transform = `translateY(${itemHeight}px)`;
@@ -869,38 +975,18 @@ const HOVER_CONFIG = {
                 
                 // Start warp band animation (randomly)
                 startWarpBandAnimation(warpBandOverlay, item);
-                
-                // Animate name container
-                nameContainer.style.transform = 'translateX(0)';
-                
-                // Animate right-to-left vertical line at the same time as top-to-bottom lines
-                requestAnimationFrame(() => {
-                    // Wait a bit for name to be visible, then calculate position
-                    setTimeout(() => {
-                        requestAnimationFrame(() => {
-                            // Get the name container position
-                            const nameRect = nameContainer.getBoundingClientRect();
-                            const itemRect = item.getBoundingClientRect();
-                            const nameLeft = nameRect.left - itemRect.left;
-                            const itemWidth = itemRect.width;
-                            
-                            // Calculate distance from right edge to name start
-                            const distanceToName = itemWidth - nameLeft;
-                            
-                            // Animate vertical line from right to left, stopping at name start
-                            rtlLineContainer.style.transform = `translateX(-${distanceToName}px)`;
-                        });
-                    }, HOVER_CONFIG.nameRevealDelay + 50); // Small delay to ensure name is positioned
-                });
+
+                // Start motion design card typing animation (1.0s choreographed timeline)
+                if (cardAnim) {
+                    cardAnim.cancel();
+                }
+                cardAnim = startCardAnimation(overlay._card, overlay._titleEl, overlay._descEl, overlay._titleText, overlay._descText);
             });
         });
         
         item.addEventListener('mouseleave', function() {
             const swipeLine1 = overlay.querySelector('.gallery-swipe-line-1');
             const swipeLine2 = overlay.querySelector('.gallery-swipe-line-2');
-            const gradientBox = overlay.querySelector('.gallery-gradient-box');
-            const nameContainer = overlay.querySelector('.gallery-hover-name');
-            const rtlLineContainer = overlay.querySelector('.gallery-rtl-line-container');
             const scanlinesOverlay = overlay.querySelector('.gallery-crt-scanlines');
             const warpBandOverlay = overlay.querySelector('.gallery-crt-warp-band');
             const img = item.querySelector('img');
@@ -952,18 +1038,26 @@ const HOVER_CONFIG = {
                 // Reset any glitch transform
                 img.style.clipPath = '';
             }
+
+            // Stop card animation and exit
+            if (cardAnim) {
+                cardAnim.cancel();
+                cardAnim = null;
+            }
+            if (overlay._card) {
+                overlay._card.classList.remove('is-active');
+                setTimeout(() => {
+                    if (overlay._card && !overlay._card.classList.contains('is-active')) {
+                        overlay._titleEl.textContent = '';
+                        if (overlay._descEl) overlay._descEl.textContent = '';
+                    }
+                }, 130);
+            }
             
             // Reset animations (animating out from bottom to top)
             swipeLine1.style.transform = 'translateY(-100%)';
             swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeOutDelay}ms`;
             swipeLine2.style.transform = 'translateY(-100%)';
-            
-            gradientBox.style.transform = 'translateY(-100%)';
-            gradientBox.style.opacity = '0';
-            gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity 0ms`;
-            nameContainer.style.transform = 'translateX(-100%)';
-            rtlLineContainer.style.transitionDelay = '0ms';
-            rtlLineContainer.style.transform = 'translateX(100%)';
             
             // Hide scanlines and warp band
             scanlinesOverlay.style.opacity = '0';
@@ -973,8 +1067,6 @@ const HOVER_CONFIG = {
             // Reset delay for next hover (after transition is fully done)
             setTimeout(() => {
                 swipeLine2.style.transitionDelay = `${HOVER_CONFIG.swipeDelay}ms`;
-                gradientBox.style.transition = `transform ${HOVER_CONFIG.swipeDuration}ms ${HOVER_CONFIG.swipeEasing}, opacity ${HOVER_CONFIG.gradientBoxFadeDuration}ms ease-out ${HOVER_CONFIG.gradientBoxFadeDelay}ms`;
-                rtlLineContainer.style.transitionDelay = `${HOVER_CONFIG.swipeLineRtlDelay}ms`;
             }, Math.max(50, HOVER_CONFIG.swipeOutDelay + HOVER_CONFIG.swipeDuration + 50));
         });
     }
