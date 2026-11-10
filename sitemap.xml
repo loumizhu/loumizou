@@ -2,6 +2,9 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
   <url>
     <loc>https://loumizhu.github.io/loumizou/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/images/00-Mermaid-Symfony.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/images/02_Flying.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/images/03_The_Book_Truce.webp</image:loc></image:image>
@@ -23,6 +26,9 @@
   </url>
   <url>
     <loc>https://loumizhu.github.io/loumizou/characters/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/characters/images/01_Forgotten_Soldier.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/characters/images/03_Andromache-Scylla-Character-Design.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/characters/images/04_Fighting_The_Good_Fight.webp</image:loc></image:image>
@@ -76,6 +82,9 @@
   </url>
   <url>
     <loc>https://loumizhu.github.io/loumizou/environments/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/environments/images/002-Medina-background-paintin.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/environments/images/03_Medina-Zanka.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/environments/images/04_Background-Art.webp</image:loc></image:image>
@@ -94,6 +103,9 @@
   </url>
   <url>
     <loc>https://loumizhu.github.io/loumizou/storyboard/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/storyboard/images/01_Ad_Running-Jogger.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/storyboard/images/02_Epic-Action.webp</image:loc></image:image>
     <image:image><image:loc>https://loumizhu.github.io/loumizou/storyboard/images/03_Ad_Running-Jogger.webp</image:loc></image:image>
@@ -115,5 +127,8 @@
   </url>
   <url>
     <loc>https://loumizhu.github.io/loumizou/about/</loc>
+    <lastmod>2026-11-10</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
   </url>
 </urlset>

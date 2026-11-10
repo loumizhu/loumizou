@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://loumizhu.github.io/loumizou/sitemap.xml
